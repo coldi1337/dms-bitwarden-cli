@@ -115,13 +115,16 @@ TestCase {
   // Every string literal in a binding, longest first. A label is often a
   // conditional -- `root.sendMode === "create" ? "Back to Sends" : "Back"` --
   // and the widest branch is the one that has to fit.
+  property var activeTranslations: ({})
+
   function widestLiteral(binding) {
     var found = binding.match(/"((?:[^"\\]|\\.)*)"/g)
     if (!found) return null
     var widest = ""
     for (var i = 0; i < found.length; i++) {
       var value = found[i].slice(1, -1).replace(/\\"/g, "\"")
-      if (value.length > widest.length) widest = value
+      value = activeTranslations[value] || value
+      if (labelWidth(value, 12) > labelWidth(widest, 12)) widest = value
     }
     return widest
   }
@@ -251,7 +254,13 @@ TestCase {
     }
   }
 
-  function test_every_row_of_buttons_fits_its_panel() {
+  function test_every_row_of_buttons_fits_its_panel_data() {
+    return [{tag: "English", locale: "en"}, {tag: "German", locale: "de"}]
+  }
+
+  function test_every_row_of_buttons_fits_its_panel(data) {
+    activeTranslations = data.locale === "de"
+      ? JSON.parse(readFile("translations/de.json")).bitwarden : ({})
     var offenders = []
     var measured = 0
     for (var i = 0; i < sources.length; i++) {

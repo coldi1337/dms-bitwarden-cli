@@ -5,10 +5,11 @@
 //
 //   node tests/initial-load.test.js
 
+const readEnglishQml = require("./helpers/english-qml.cjs")
 const fs = require("fs")
 const path = require("path")
 
-const panelSrc = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+const panelSrc = readEnglishQml(path.join(__dirname, "..", "Panel.qml"))
 let pass = 0
 const failures = []
 const check = (label, ok, detail) => ok ? pass++ : failures.push(`${label}\n    ${detail}`)

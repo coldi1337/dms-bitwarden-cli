@@ -85,7 +85,7 @@ Column {
         PanelActionButton {
           visible: root.sensitive
           iconText: root.revealed ? "󰈉" : "󰈈"
-          tooltipText: (root.revealed ? "Hide " : "Reveal ") + root.copyLabel.toLowerCase()
+          tooltipText: Tr.format(root.revealed ? "Hide %1" : "Reveal %1", root.copyLabel)
             + (root.revealHint === "" ? "" : " (" + root.revealHint + ")")
           fontFamily: root.fontFamily
           onClicked: root.revealToggled()
@@ -93,7 +93,7 @@ Column {
 
         PanelActionButton {
           iconText: root.copyIcon
-          tooltipText: "Copy " + root.copyLabel.toLowerCase()
+          tooltipText: Tr.format("Copy %1", root.copyLabel)
             + (root.shortcutHint === "" ? "" : " (" + root.shortcutHint + ")")
           fontFamily: root.fontFamily
           onClicked: root.copyRequested()

@@ -81,7 +81,7 @@ BorderSurface {
       Text {
         textFormat: Text.PlainText
         width: parent.width
-        text: root.showsError ? "NEEDS ATTENTION" : "STATUS"
+        text: root.showsError ? Tr.text("NEEDS ATTENTION") : Tr.text("STATUS")
         color: root.tone
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
@@ -118,7 +118,7 @@ BorderSurface {
       visible: root.showsError
       anchors.verticalCenter: parent.verticalCenter
       iconText: "󰅖"
-      tooltipText: "Dismiss message"
+      tooltipText: Tr.text("Dismiss message")
       fontFamily: root.fontFamily
       onClicked: root.errorDismissed()
     }

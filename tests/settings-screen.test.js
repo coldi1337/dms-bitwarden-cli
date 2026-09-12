@@ -6,10 +6,11 @@
 //
 //   node tests/settings-screen.test.js
 
+const readEnglishQml = require("./helpers/english-qml.cjs")
 const fs = require("fs")
 const path = require("path")
 
-const panelSrc = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+const panelSrc = readEnglishQml(path.join(__dirname, "..", "Panel.qml"))
 
 let pass = 0
 const failures = []
@@ -31,7 +32,7 @@ check("colorized icon reads the persisted boolean setting",
   /readonly property bool colorizeIcon: Model\.boolSetting\("colorizeIcon", setting\("colorizeIcon", false\)\)/.test(panelSrc),
   "expected a false-safe colorizeIcon setting property")
 
-const dmsBar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
+const dmsBar = readEnglishQml(path.join(__dirname, "..", "BarWidget.qml"))
 check("DMS icon follows the configured accent toggle",
   dmsBar.includes("colorizeIcon ? Theme.primary : Theme.widgetIconColor"), "wrong icon palette")
 check("DMS icon distinguishes a locked vault",

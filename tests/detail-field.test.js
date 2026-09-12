@@ -6,11 +6,12 @@
 //
 //   node tests/detail-field.test.js
 
+const readEnglishQml = require("./helpers/english-qml.cjs")
 const fs = require("fs")
 const path = require("path")
 
 const read = f => fs.existsSync(path.join(__dirname, "..", f))
-  ? fs.readFileSync(path.join(__dirname, "..", f), "utf8") : ""
+  ? readEnglishQml(path.join(__dirname, "..", f)) : ""
 
 const fieldSrc = read("DetailField.qml")
 const panelSrc = read("Panel.qml")

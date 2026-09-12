@@ -6,11 +6,12 @@
 //
 //   node tests/ssh-items.test.js
 
+const readEnglishQml = require("./helpers/english-qml.cjs")
 const fs = require("fs")
 const os = require("os")
 const path = require("path")
 const { spawnSync } = require("child_process")
-const panelSrc = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+const panelSrc = readEnglishQml(path.join(__dirname, "..", "Panel.qml"))
 
 const Model = {}
 new Function("exports", fs.readFileSync(path.join(__dirname, "..", "BitwardenModel.js"), "utf8")

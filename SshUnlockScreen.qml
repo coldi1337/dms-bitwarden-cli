@@ -66,8 +66,8 @@ Column {
       textFormat: Text.PlainText
       anchors.horizontalCenter: parent.horizontalCenter
       text: screen.panel.status === "unlocked"
-        ? "Loading SSH keys"
-        : (screen.panel.fingerprintReady ? "Unlock Vault" : "Enter Master Password")
+        ? Tr.text("Loading SSH keys")
+        : (screen.panel.fingerprintReady ? Tr.text("Unlock Vault") : Tr.text("Enter Master Password"))
       color: screen.panel.fg
       font.family: screen.panel.fontFamily
       font.pixelSize: Style.font.title
@@ -88,19 +88,19 @@ Column {
   UnlockCaption {
     text: {
       var request = screen.panel.sshUnlockRequest
-      var prefix = "Vault needs to be unlocked first: "
-      if (!request) return "Vault needs to be unlocked first."
+      var prefix = Tr.text("Vault needs to be unlocked first: ")
+      if (!request) return Tr.text("Vault needs to be unlocked first.")
       if (request.keyName !== "") {
-        return prefix + request.keyName + " is needed by " + request.processName + "."
+        return prefix + request.keyName + Tr.text(" is needed by ") + request.processName + "."
       }
-      return prefix + request.processName + " is asking which SSH keys are available."
+      return prefix + request.processName + Tr.text(" is asking which SSH keys are available.")
     }
     horizontalAlignment: Text.AlignHCenter
     color: screen.panel.fg
   }
 
   UnlockCaption {
-    text: "Unlocking only loads the key. You will still approve the signing request separately."
+    text: Tr.text("Unlocking only loads the key. You will still approve the signing request separately.")
     horizontalAlignment: Text.AlignHCenter
   }
 
@@ -123,7 +123,7 @@ Column {
     visible: screen.panel.fingerprintUnlock && screen.panel.fingerprintAvailable && !screen.panel.fingerprintStored
     width: parent.width
     horizontalAlignment: Text.AlignHCenter
-    text: "󰈷  Unlock once with your master password to enable fingerprint unlock."
+    text: Tr.text("󰈷  Unlock once with your master password to enable fingerprint unlock.")
     color: screen.panel.dim
     font.family: screen.panel.fontFamily
     font.pixelSize: Style.font.caption
@@ -145,7 +145,7 @@ Column {
       anchors.centerIn: parent
       width: parent.width - Style.space(24)
       text: screen.panel.status === "checking"
-        ? "Checking vault status..."
+        ? Tr.text("Checking vault status...")
         : Model.sshAgentLoadingNote()
       color: screen.panel.fg
       font.family: screen.panel.fontFamily
@@ -177,7 +177,7 @@ Column {
       TextField {
         id: pinField
         width: parent.width - pinUnlockBtn.width - Style.space(8)
-        placeholderText: "Enter your PIN..."
+        placeholderText: Tr.text("Enter your PIN...")
         password: true
         text: screen.panel.pinEntry
         onTextChanged: screen.panel.pinEntry = text.replace(/[^0-9]/g, "")
@@ -187,7 +187,7 @@ Column {
 
       Button {
         id: pinUnlockBtn
-        text: screen.panel.pinBusy ? "Checking..." : "Unlock"
+        text: screen.panel.pinBusy ? Tr.text("Checking...") : Tr.text("Unlock")
         iconText: screen.panel.pinBusy ? "󰑐" : "󰌿"
         iconSpinning: screen.panel.pinBusy
         selected: true
@@ -212,7 +212,7 @@ Column {
 
     Text {
       textFormat: Text.PlainText
-      text: "or use your master password below"
+      text: Tr.text("or use your master password below")
       color: screen.panel.dim
       font.family: screen.panel.fontFamily
       font.pixelSize: Style.font.caption
@@ -228,7 +228,7 @@ Column {
     Button {
       visible: screen.panel.fingerprintReady
       width: parent.width
-      text: screen.panel.fingerprintScanning ? "Waiting for fingerprint..." : "Unlock with Fingerprint"
+      text: screen.panel.fingerprintScanning ? Tr.text("Waiting for fingerprint...") : Tr.text("Unlock with Fingerprint")
       iconText: "󰈷"
       selected: true
       accent: Color.accent
@@ -245,7 +245,7 @@ Column {
       TextField {
         id: passwordField
         width: parent.width - eyeBtnUnlock.width - Style.space(8)
-        placeholderText: "Master password..."
+        placeholderText: Tr.text("Master password...")
         password: !eyeBtnUnlock.revealed
         text: screen.panel.masterPassword
         onTextChanged: screen.panel.masterPassword = text
@@ -258,7 +258,7 @@ Column {
         id: eyeBtnUnlock
         property bool revealed: false
         iconText: revealed ? "󰈉" : "󰈈"
-        tooltipText: revealed ? "Hide password" : "Show password"
+        tooltipText: revealed ? Tr.text("Hide password") : Tr.text("Show password")
         fontFamily: screen.panel.fontFamily
         focusable: true
         onClicked: revealed = !revealed
@@ -267,7 +267,7 @@ Column {
 
     Button {
       width: parent.width
-      text: screen.panel.isUnlocking ? "Unlocking..." : "Unlock Vault"
+      text: screen.panel.isUnlocking ? Tr.text("Unlocking...") : Tr.text("Unlock Vault")
       iconText: screen.panel.isUnlocking ? "󰑐" : "󰌋"
       iconSpinning: screen.panel.isUnlocking
       selected: true
@@ -288,7 +288,7 @@ Column {
 
   UnlockCaption {
     visible: screen.panel.status === "unauthenticated"
-    text: "Sign in from the Bitwarden panel before using vault SSH keys."
+    text: Tr.text("Sign in from the Bitwarden panel before using vault SSH keys.")
     color: screen.panel.urgent
     horizontalAlignment: Text.AlignHCenter
   }
@@ -298,7 +298,7 @@ Column {
     spacing: Style.space(8)
 
     Button {
-      text: "Not now (Esc)"
+      text: Tr.text("Not now (Esc)")
       iconText: "󰅘"
       fontFamily: screen.panel.fontFamily
       fontSize: Style.font.bodySmall
@@ -308,7 +308,7 @@ Column {
 
     Button {
       visible: screen.panel.sshUnlockPendingCount > 1
-      text: "Deny all (" + screen.panel.sshUnlockPendingCount + ")"
+      text: Tr.text("Deny all (") + screen.panel.sshUnlockPendingCount + ")"
       iconText: "󰅙"
       fontFamily: screen.panel.fontFamily
       fontSize: Style.font.bodySmall
@@ -321,7 +321,7 @@ Column {
     Text {
       textFormat: Text.PlainText
       anchors.verticalCenter: parent.verticalCenter
-      text: screen.panel.sshPromptRemainingSec + "s left"
+      text: screen.panel.sshPromptRemainingSec + Tr.text("s left")
       color: screen.panel.sshPromptRemainingSec <= 5
         ? screen.panel.urgent : screen.panel.dim
       font.family: screen.panel.fontFamily

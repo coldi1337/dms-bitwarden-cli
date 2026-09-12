@@ -8,6 +8,12 @@ Search, copy and manage a Bitwarden or Vaultwarden vault directly in a Quickshel
 
 The preview shows a settings excerpt with account information excluded. The numbered screenshots inherited from upstream show its Omarchy UI with fictional demo data.
 
+## Language
+
+The interface includes English and German. It follows the language selected in DMS, including German regional locales such as `de_AT` and `de_DE`. English is the fallback for untranslated text; external CLI diagnostics may also remain English. Vault contents are never translated.
+
+Translations are shipped in `translations/de.json` and loaded through DMS's plugin translation service. No POEditor enrollment is needed for these local translations.
+
 ## Requirements
 
 - DankMaterialShell **1.6.0 or newer** and Quickshell.

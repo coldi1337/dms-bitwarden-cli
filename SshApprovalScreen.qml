@@ -66,7 +66,7 @@ Column {
     Text {
       textFormat: Text.PlainText
       anchors.verticalCenter: parent.verticalCenter
-      text: "SSH signing request"
+      text: Tr.text("SSH signing request")
       color: panel.fg
       font.family: panel.fontFamily
       font.pixelSize: Style.font.body
@@ -78,7 +78,7 @@ Column {
       textFormat: Text.PlainText
       visible: panel.sshPendingCount > 1
       anchors.verticalCenter: parent.verticalCenter
-      text: "1 of " + panel.sshPendingCount
+      text: Tr.text("1 of ") + panel.sshPendingCount
       color: Color.accent
       font.family: panel.fontFamily
       font.pixelSize: Style.font.caption
@@ -88,7 +88,7 @@ Column {
     Text {
       textFormat: Text.PlainText
       anchors.verticalCenter: parent.verticalCenter
-      text: panel.sshPromptRemainingSec + "s left"
+      text: panel.sshPromptRemainingSec + Tr.text("s left")
       color: panel.sshPromptRemainingSec <= 5 ? panel.urgent : panel.dim
       font.family: panel.fontFamily
       font.pixelSize: Style.font.caption
@@ -106,11 +106,11 @@ Column {
 
   SshCaption {
     visible: panel.sshAgentLoadActive
-    text: Model.sshAgentLoadingNote()
+    text: Tr.text(Model.sshAgentLoadingNote())
   }
 
   SshSectionHeader {
-    text: "KEY"
+    text: Tr.text("KEY")
   }
 
   Text {
@@ -131,7 +131,7 @@ Column {
   }
 
   SshSectionHeader {
-    text: "REQUESTED BY"
+    text: Tr.text("REQUESTED BY")
   }
 
   Text {
@@ -162,13 +162,13 @@ Column {
 
   // Deny leads, and nothing is activated by a bare Enter: a stray
   // keypress must not be able to sign.
-  Row {
+  Flow {
     width: parent.width
     spacing: Style.space(8)
 
     Button {
       id: denyButton
-      text: "Deny (Esc)"
+      text: Tr.text("Deny (Esc)")
       iconText: "󰅘"
       fontFamily: panel.fontFamily
       fontSize: Style.font.bodySmall
@@ -178,7 +178,7 @@ Column {
 
     Button {
       visible: panel.sshPendingCount > 1
-      text: "Deny all (" + panel.sshPendingCount + ")"
+      text: Tr.text("Deny all (") + panel.sshPendingCount + ")"
       iconText: "󰅙"
       fontFamily: panel.fontFamily
       fontSize: Style.font.bodySmall
@@ -187,7 +187,7 @@ Column {
     }
 
     Button {
-      text: "Approve once"
+      text: Tr.text("Approve once")
       iconText: "󰄬"
       fontFamily: panel.fontFamily
       fontSize: Style.font.bodySmall
@@ -200,7 +200,7 @@ Column {
     visible: panel.sshPrompt && panel.sshPrompt.grantOffered
     text: panel.sshPrompt ? panel.sshPrompt.grantLabel : ""
     iconText: "󰔟"
-    tooltipText: "Sign further requests from this same program with this key, without asking again, until the window expires"
+    tooltipText: Tr.text("Sign further requests from this same program with this key, without asking again, until the window expires")
     fontFamily: panel.fontFamily
     fontSize: Style.font.bodySmall
     focusable: true

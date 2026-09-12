@@ -5,6 +5,7 @@
 //
 //   node tests/items.test.js
 
+const readEnglishQml = require("./helpers/english-qml.cjs")
 const fs = require("fs")
 const path = require("path")
 const Model = {}
@@ -438,7 +439,7 @@ check("an unrecognised type is drawn as a login, not as the unreachable shield",
 // rather than by count, because what broke this was a bulk glyph replacement
 // that meant to touch one new button and silently rewrote every other use of
 // the same codepoint. A count alone would have moved with it.
-const panelSrc = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+const panelSrc = readEnglishQml(path.join(__dirname, "..", "Panel.qml"))
 const KEY = String.fromCodePoint(0xF0306)
 const passwordButtons = [
   ['tooltipText: "Password generator (g)"', "the generator button"],

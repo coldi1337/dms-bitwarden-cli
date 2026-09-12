@@ -42,7 +42,7 @@ Column {
   Item { width: parent.width; height: Style.space(10) }
 
   SshSectionHeader {
-    text: "SSH AGENT STATUS"
+    text: Tr.text("SSH AGENT STATUS")
   }
 
   Row {
@@ -74,8 +74,8 @@ Column {
   // the two wastes an afternoon.
   SshCaption {
     visible: panel.sshAgentHelper.source !== ""
-    text: "Using " + Model.sshAgentHelperSourceLabel(panel.sshAgentHelper.source)
-      + (panel.sshAgentHelper.checksum === "match" ? " (checksum verified)" : "")
+    text: Tr.text("Using ") + Model.sshAgentHelperSourceLabel(panel.sshAgentHelper.source)
+      + (panel.sshAgentHelper.checksum === "match" ? Tr.text(" (checksum verified)") : "")
     color: panel.sshAgentHelper.source === "development" ? panel.urgent : panel.dim
   }
 
@@ -93,7 +93,7 @@ Column {
   // a working one.
   SshCaption {
     visible: panel.sshAgentVersion !== ""
-    text: "Helper version " + panel.sshAgentVersion
+    text: Tr.text("Helper version ") + panel.sshAgentVersion
   }
 
   // Routing is the thing most likely to be missing when the agent looks
@@ -110,7 +110,7 @@ Column {
   Item { width: parent.width; height: Style.space(10) }
 
   SshSectionHeader {
-    text: "CLIENT ROUTING"
+    text: Tr.text("CLIENT ROUTING")
   }
 
   SshCaption {
@@ -139,9 +139,9 @@ Column {
   // first click.
   SshCaption {
     visible: panel.uwsmConfirmPending
-    text: "This will make Bitwarden your session's SSH agent at the next login, replacing "
-      + (panel.sshRouting.owner !== "" ? panel.sshRouting.owner : "the one you have now")
-      + ". Continue?"
+    text: Tr.text("This will make Bitwarden your session's SSH agent at the next login, replacing ")
+      + (panel.sshRouting.owner !== "" ? panel.sshRouting.owner : Tr.text("the one you have now"))
+      + Tr.text(". Continue?")
     color: panel.urgent
   }
 
@@ -161,9 +161,9 @@ Column {
 
     Button {
       visible: !panel.uwsmConfirmPending && panel.uwsmFragment.state !== "managed"
-      text: "Route SSH Clients Here"
+      text: Tr.text("Route SSH Clients Here")
       iconText: "󰌘"
-      tooltipText: "Write " + Model.uwsmFragmentDisplayPath() + " so the next login points SSH clients at this agent"
+      tooltipText: Tr.text("Write ") + Model.uwsmFragmentDisplayPath() + Tr.text(" so the next login points SSH clients at this agent")
       fontFamily: panel.fontFamily
       fontSize: Style.font.bodySmall
       enabled: !panel.uwsmBusy
@@ -172,7 +172,7 @@ Column {
 
     Button {
       visible: panel.uwsmConfirmPending
-      text: "Yes, Replace It"
+      text: Tr.text("Yes, Replace It")
       iconText: "󰄬"
       fontFamily: panel.fontFamily
       fontSize: Style.font.bodySmall
@@ -182,7 +182,7 @@ Column {
 
     Button {
       visible: panel.uwsmConfirmPending
-      text: "Cancel"
+      text: Tr.text("Cancel")
       iconText: "󰅘"
       fontFamily: panel.fontFamily
       fontSize: Style.font.bodySmall
@@ -191,9 +191,9 @@ Column {
 
     Button {
       visible: !panel.uwsmConfirmPending && panel.uwsmFragment.removable
-      text: "Remove Routing File"
+      text: Tr.text("Remove Routing File")
       iconText: "󰩹"
-      tooltipText: "Delete " + Model.uwsmFragmentDisplayPath()
+      tooltipText: Tr.text("Delete ") + Model.uwsmFragmentDisplayPath()
       fontFamily: panel.fontFamily
       fontSize: Style.font.bodySmall
       enabled: !panel.uwsmBusy
@@ -208,7 +208,7 @@ Column {
 
   SshSectionHeader {
     visible: panel.sshGrants.length > 0
-    text: "ACTIVE APPROVALS"
+    text: Tr.text("ACTIVE APPROVALS")
   }
 
   // Every live grant, with the process it belongs to and what is
@@ -231,7 +231,7 @@ Column {
 
       Button {
         anchors.verticalCenter: parent.verticalCenter
-        text: "Revoke"
+        text: Tr.text("Revoke")
         iconText: "󰩹"
         fontFamily: panel.fontFamily
         fontSize: Style.font.caption
@@ -242,9 +242,9 @@ Column {
 
   Button {
     visible: panel.sshGrants.length > 1
-    text: "Revoke All Approvals"
+    text: Tr.text("Revoke All Approvals")
     iconText: "󰩹"
-    tooltipText: "Drop every live approval; the next signature asks again"
+    tooltipText: Tr.text("Drop every live approval; the next signature asks again")
     fontFamily: panel.fontFamily
     fontSize: Style.font.bodySmall
     onClicked: panel.revokeAllSshGrants()

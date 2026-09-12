@@ -7,6 +7,7 @@
 //
 //   node tests/auth.test.js
 
+const readEnglishQml = require("./helpers/english-qml.cjs")
 const fs = require("fs")
 const os = require("os")
 const path = require("path")
@@ -596,7 +597,7 @@ fs.rmSync(keyringStub, { recursive: true, force: true })
 
 // The command is only half of it: the panel has to run it, and run it without
 // first asking a flag for permission. Both gates below were the bug.
-const panelSrc = fs.readFileSync(path.join(__dirname, "..", "Panel.qml"), "utf8")
+const panelSrc = readEnglishQml(path.join(__dirname, "..", "Panel.qml"))
 const bodyOf = (name) => {
   const start = panelSrc.indexOf(`function ${name}(`)
   if (start === -1) return ""

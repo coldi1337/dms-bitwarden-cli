@@ -19,6 +19,11 @@ Item {
   property Item barAnchor: null
   property bool opened: false
   readonly property var savedSettings: DmsCommon.SettingsData.getPluginSettingsForPlugin(pluginId)
+  function pinWarning(pin) {
+    if (!Model.isPinWeak(pin)) return "";
+    return Tr.format("A %1-digit PIN is only %2 combinations. If the encrypted blob ever leaks, that is minutes of offline guessing. Use %3 or more.",
+      String(pin).length, Math.pow(10, String(pin).length).toLocaleString(Qt.locale()), Model.pinRecommendedLength());
+  }
   function setting(key, fallback) {
     if (savedSettings && savedSettings[key] !== undefined) return savedSettings[key];
     const entry = Model.settingSchemaEntry(key);
@@ -601,13 +606,13 @@ Item {
   }
 
   readonly property var categories: [
-    { id: "all", label: "All", icon: "󰞀" },
-    { id: "login", label: "Logins", icon: "󰌋" },
-    { id: "secureNote", label: "Notes", icon: "󰈙" },
-    { id: "card", label: "Cards", icon: "󰿯" },
-    { id: "identity", label: "Identities", icon: "" },
-    { id: "sshKey", label: "SSH Keys", icon: "󰣀" },
-    { id: "favorite", label: "Favorites", icon: "󰓒" }
+    { id: "all", label: Tr.text("All"), icon: "󰞀" },
+    { id: "login", label: Tr.text("Logins"), icon: "󰌋" },
+    { id: "secureNote", label: Tr.text("Notes"), icon: "󰈙" },
+    { id: "card", label: Tr.text("Cards"), icon: "󰿯" },
+    { id: "identity", label: Tr.text("Identities"), icon: "" },
+    { id: "sshKey", label: Tr.text("SSH Keys"), icon: "󰣀" },
+    { id: "favorite", label: Tr.text("Favorites"), icon: "󰓒" }
   ]
 
   // SSH keys need a CLI that can decrypt them. Until the probe confirms one,
@@ -797,7 +802,7 @@ Item {
     var status = Model.sshAgentCooldownStatus(root.sshCooldown, Date.now())
     if (status.active && !root.sshCooldownAnnounced) {
       root.sshCooldownAnnounced = true
-      flashNotification("SSH signing paused: too many unanswered prompts")
+      flashNotification(Tr.text("SSH signing paused: too many unanswered prompts"))
     } else if (!status.active) {
       root.sshCooldownAnnounced = false
     }
@@ -1565,10 +1570,10 @@ Item {
     if (!item || !item.id || !detectedContext || !Model.isLoginItem(item)) return
     if (Model.isAssociated(associations, detectedContext, item.id)) {
       saveAssociations(Model.forgetAssociation(associations, detectedContext, item.id))
-      flashNotification("No longer suggested for " + detectedContext.displayName)
+      flashNotification(Tr.text("No longer suggested for ") + detectedContext.displayName)
     } else {
       saveAssociations(Model.recordAssociation(associations, detectedContext, item.id, new Date().toISOString()))
-      flashNotification("Always suggested for " + detectedContext.displayName)
+      flashNotification(Tr.text("Always suggested for ") + detectedContext.displayName)
     }
     if (activeWindowData) handleActiveWindowDetected(activeWindowData)
   }
@@ -1751,7 +1756,7 @@ Item {
       beginInitialVaultLoad(true, false)
       resetAutoLockTimer()
       focusAppropriateField()
-      flashNotification("Signed in from the terminal")
+      flashNotification(Tr.text("Signed in from the terminal"))
       return
     }
 
@@ -1941,12 +1946,12 @@ Item {
     if (loginSubmitted) return
     var code = String(loginDeviceCode || "").trim()
     if (!code) {
-      errorMessage = "Enter the code Bitwarden emailed you."
+      errorMessage = Tr.text("Enter the code Bitwarden emailed you.")
       Qt.callLater(function() { deviceCodeField.forceActiveFocus() })
       return
     }
     if (!String(loginPassword || "")) {
-      errorMessage = "Your master password is needed again for this step."
+      errorMessage = Tr.text("Your master password is needed again for this step.")
       resetEmailLoginSecondFactor()
       Qt.callLater(function() { loginPassField.forceActiveFocus() })
       return
@@ -2051,10 +2056,10 @@ Item {
   }
 
   function emailLoginButtonText() {
-    if (logoutCleanupFailed) return "Retry Logout Cleanup"
-    if (logoutPending) return "Finishing logout..."
-    if (isLoading) return show2faField ? "Verifying..." : "Logging in..."
-    return show2faField ? "Verify & Unlock" : "Log In & Unlock"
+    if (logoutCleanupFailed) return Tr.text("Retry Logout Cleanup")
+    if (logoutPending) return Tr.text("Finishing logout...")
+    if (isLoading) return show2faField ? Tr.text("Verifying...") : Tr.text("Logging in...")
+    return show2faField ? Tr.text("Verify & Unlock") : Tr.text("Log In & Unlock")
   }
 
   function prepareEmailLogin() {
@@ -2155,7 +2160,7 @@ Item {
       unlockSubmitted = false
       isUnlocking = false
       if (unlockProc.running) unlockProc.running = false
-      errorMessage = "Could not deliver the password to Bitwarden. Please try again."
+      errorMessage = Tr.text("Could not deliver the password to Bitwarden. Please try again.")
       Qt.callLater(prepareUnlock)
     } else if (target === "login") {
       loginSubmitted = false
@@ -2173,7 +2178,7 @@ Item {
         Qt.callLater(retryDevice ? submitDeviceVerification : submitLogin)
         return
       }
-      errorMessage = "Could not deliver the password to Bitwarden. Please try again."
+      errorMessage = Tr.text("Could not deliver the password to Bitwarden. Please try again.")
     }
   }
 
@@ -2181,7 +2186,7 @@ Item {
     if (loginSubmitted) return
     errorMessage = ""
     if (logoutPending) {
-      errorMessage = "Finishing logout. Please wait a moment."
+      errorMessage = Tr.text("Finishing logout. Please wait a moment.")
       return
     }
 
@@ -2198,19 +2203,19 @@ Item {
       var email = String(loginEmail || "").trim()
       var pass = String(loginPassword === undefined || loginPassword === null ? "" : loginPassword)
       if (!email) {
-        errorMessage = "Email address is required"
+        errorMessage = Tr.text("Email address is required")
         return
       }
       if (!pass) {
-        errorMessage = "Master password is required"
+        errorMessage = Tr.text("Master password is required")
         return
       }
       if (show2faMethodPicker) {
-        errorMessage = "Choose a two-step method to continue."
+        errorMessage = Tr.text("Choose a two-step method to continue.")
         return
       }
       if (show2faField && !String(login2faCode || "").trim()) {
-        errorMessage = "Two-step verification code is required"
+        errorMessage = Tr.text("Two-step verification code is required")
         Qt.callLater(function() { code2faField.forceActiveFocus() })
         return
       }
@@ -2240,15 +2245,15 @@ Item {
       var pass2 = String(loginPassword === undefined || loginPassword === null ? "" : loginPassword)
 
       if (!id) {
-        errorMessage = "API Client ID is required"
+        errorMessage = Tr.text("API Client ID is required")
         return
       }
       if (!secret) {
-        errorMessage = "API Client Secret is required"
+        errorMessage = Tr.text("API Client Secret is required")
         return
       }
       if (!pass2) {
-        errorMessage = "Master password is required to unlock vault"
+        errorMessage = Tr.text("Master password is required to unlock vault")
         return
       }
 
@@ -2296,16 +2301,16 @@ Item {
       if (exitCode === 124 || Model.loginPromptRanOutOfInput(out, err)) {
         showDeviceCodeField = false
         logLogin("device-unanswerable", out, err, exitCode)
-        errorMessage = "This login asked for something the panel could not answer. "
-          + "Finish it in a terminal instead."
+        errorMessage = Tr.text("This login asked for something the panel could not answer. ")
+          + Tr.text("Finish it in a terminal instead.")
         return
       }
       logLogin("device-code-rejected", out, err, exitCode)
       showDeviceCodeField = true
       markSecondFactorStage()
       errorMessage = detail
-        ? "Device verification failed: " + detail
-        : "That verification code was not accepted. Use the newest email and try again."
+        ? Tr.text("Device verification failed: ") + detail
+        : Tr.text("That verification code was not accepted. Use the newest email and try again.")
       Qt.callLater(function() { deviceCodeField.forceActiveFocus() })
       return
     }
@@ -2319,7 +2324,7 @@ Item {
       loginDeviceVerification = true
       showDeviceCodeField = true
       markSecondFactorStage()
-      errorMessage = "Bitwarden needs to verify this device. Enter the code it emailed you."
+      errorMessage = Tr.text("Bitwarden needs to verify this device. Enter the code it emailed you.")
       logLogin("device-verification", out, err, exitCode)
       Qt.callLater(function() { deviceCodeField.forceActiveFocus() })
       return
@@ -2330,7 +2335,7 @@ Item {
     if (Model.loginHasNoUsableProvider(out, err)) {
       resetEmailLoginSecondFactor()
       logLogin("no-usable-provider", out, err, exitCode)
-      errorMessage = "This account's two-step method is one the Bitwarden CLI cannot use, "
+      errorMessage = Tr.text("This account's two-step method is one the Bitwarden CLI cannot use, ")
         + "such as a passkey or Duo. Log in with an API key instead."
       return
     }
@@ -2360,9 +2365,9 @@ Item {
       show2faMethodPicker = true
       markSecondFactorStage()
       errorMessage = rejectedMethod
-        ? "Bitwarden does not have " + rejectedMethod + " set up for this account. "
-          + "Choose another method."
-        : "This account has more than one two-step method. Choose the one you use."
+        ? Tr.text("Bitwarden does not have ") + rejectedMethod + " set up for this account. "
+          + Tr.text("Choose another method.")
+        : Tr.text("This account has more than one two-step method. Choose the one you use.")
         logLogin("method-choice", out, err, exitCode)
       return
     }
@@ -2385,7 +2390,7 @@ Item {
         show2faMethodPicker = true
         markSecondFactorStage()
         syncLoginFieldsToState()
-        errorMessage = "Two-step verification is required. Choose the method this account uses."
+        errorMessage = Tr.text("Two-step verification is required. Choose the method this account uses.")
         logLogin("second-factor-needs-method", out, err, exitCode)
         return
       }
@@ -2395,8 +2400,8 @@ Item {
       markSecondFactorStage()
       logLogin("second-factor", out, err, exitCode)
       errorMessage = secondFactorWasVisible
-        ? "That two-step verification code was not accepted. Please try again."
-        : "Two-step verification is required. Enter your code to continue."
+        ? Tr.text("That two-step verification code was not accepted. Please try again.")
+        : Tr.text("Two-step verification is required. Enter your code to continue.")
       Qt.callLater(function() { code2faField.forceActiveFocus() })
       return
     }
@@ -2415,7 +2420,7 @@ Item {
       errorMessage = err
     } else if (exitCode !== 0) {
       logLogin("failed-no-stderr", out, err, exitCode)
-      errorMessage = "Login failed. Please check your credentials."
+      errorMessage = Tr.text("Login failed. Please check your credentials.")
     } else {
       // bw exited cleanly and said nothing at all. Handing that to the unlock
       // path was silent by construction: prepareUnlock() refuses it because
@@ -2423,14 +2428,14 @@ Item {
       // created and failed two seconds later, after the next click had already
       // cleared the message. Say what happened instead.
       logLogin("clean-exit-no-session", out, err, exitCode)
-      errorMessage = "Bitwarden reported no error but returned no session. "
-        + "Please try again, or use the terminal login."
+      errorMessage = Tr.text("Bitwarden reported no error but returned no session. ")
+        + Tr.text("Please try again, or use the terminal login.")
     }
   }
 
   function launchTerminalLogin() {
     if (logoutPending) {
-      errorMessage = "Finishing logout. Please wait a moment."
+      errorMessage = Tr.text("Finishing logout. Please wait a moment.")
       return
     }
     // The panel knows whether this is a login or an unlock, so the terminal
@@ -2487,14 +2492,14 @@ Item {
   function finishLogoutIfReady() {
     if (!logoutPending || !logoutCliDone || !logoutCredentialsDone) return
     if (logoutCredentialsExitCode !== 0) {
-      errorMessage = "Could not clear stored credentials. Retry logout cleanup before signing in."
+      errorMessage = Tr.text("Could not clear stored credentials. Retry logout cleanup before signing in.")
       return
     }
     logoutPending = false
     status = "unauthenticated"
     currentScreen = "login"
-    if (logoutExitCode === 0) flashNotification("Logged out")
-    else errorMessage = "Bitwarden logout did not complete cleanly. Please try again."
+    if (logoutExitCode === 0) flashNotification(Tr.text("Logged out"))
+    else errorMessage = Tr.text("Bitwarden logout did not complete cleanly. Please try again.")
     focusAppropriateField()
   }
 
@@ -2766,7 +2771,7 @@ Item {
 
   function submitCreateSend() {
     if (!String(sendFormText || "").trim()) {
-      sendError = "Nothing to send -- enter some text"
+      sendError = Tr.text("Nothing to send -- enter some text")
       return
     }
     sendError = ""
@@ -2784,7 +2789,7 @@ Item {
     sendPayloadJson = ""
     if (vaultReadIsStale("sendCreate")) return
     if (exitCode !== 0) {
-      sendError = String(stderrText || "").trim() || "Could not create the Send"
+      sendError = String(stderrText || "").trim() || Tr.text("Could not create the Send")
       return
     }
     // bw prints the access URL; put it straight on the clipboard, since a Send
@@ -2793,9 +2798,9 @@ Item {
     try { created = JSON.parse(stdoutText) } catch (e) { created = null }
     var url = created && created.accessUrl ? String(created.accessUrl) : String(stdoutText || "").trim()
     if (url) {
-      copyToClipboard(url, "Send link")
+      copyToClipboard(url, Tr.text("Send link"))
     } else {
-      flashNotification("Send created")
+      flashNotification(Tr.text("Send created"))
     }
     sendFormText = ""
     sendFormPassword = ""
@@ -2805,7 +2810,7 @@ Item {
 
   function copySendLink(send) {
     if (!send || !send.accessUrl) return
-    copyToClipboard(send.accessUrl, "Send link")
+    copyToClipboard(send.accessUrl, Tr.text("Send link"))
   }
 
   function deleteSend(send) {
@@ -2820,10 +2825,10 @@ Item {
     sendBusy = false
     if (vaultReadIsStale("sendDelete")) return
     if (exitCode !== 0) {
-      sendError = "Could not delete the Send"
+      sendError = Tr.text("Could not delete the Send")
       return
     }
-    flashNotification("Send deleted")
+    flashNotification(Tr.text("Send deleted"))
     loadSends()
   }
 
@@ -2867,7 +2872,7 @@ Item {
     // into a form you are still filling in rather than straight to the vault.
     formPasswordRevealed = true
     closeGenerator()
-    flashNotification("Generated password filled in")
+    flashNotification(Tr.text("Generated password filled in"))
   }
 
   // Generation is delegated to Bitwarden's own generator either way; the only
@@ -3065,7 +3070,7 @@ Item {
     genBusy = false
     var v = String(text || "").trim()
     if (exitCode !== 0 || !v) {
-      errorMessage = "Could not generate with these options"
+      errorMessage = Tr.text("Could not generate with these options")
       return
     }
     genValue = v
@@ -3083,7 +3088,7 @@ Item {
 
   function copyGenerated() {
     if (genBusy || !genValue) return
-    copyToClipboard(genValue, genOpts.type === "passphrase" ? "Passphrase" : "Password")
+    copyToClipboard(genValue, genOpts.type === "passphrase" ? Tr.text("Passphrase") : Tr.text("Password"))
   }
 
   // -------------------------------------------------------------------------
@@ -3122,7 +3127,7 @@ Item {
     if (pinBusy || pinStoreProc.running) return
     var err = Model.validatePin(pinSetupPin, pinSetupConfirm)
     if (err) { pinError = err; return }
-    if (!pinSetupMaster) { pinError = "Master password is required to encrypt the PIN"; return }
+    if (!pinSetupMaster) { pinError = Tr.text("Master password is required to encrypt the PIN"); return }
 
     pinError = ""
     pinBusy = true
@@ -3141,7 +3146,7 @@ Item {
       return
     }
     if (exitCode !== 0) {
-      pinError = "Could not save the PIN. Is the OS keyring available?"
+      pinError = Tr.text("Could not save the PIN. Is the OS keyring available?")
       return
     }
     pinConfigured = true
@@ -3150,14 +3155,14 @@ Item {
     pinSetupMaster = ""
     pinAttempts = 0
     writeSetting("pinUnlock", true, "bool")
-    flashNotification("PIN unlock enabled")
+    flashNotification(Tr.text("PIN unlock enabled"))
     currentScreen = "settings"
   }
 
   function submitPinUnlock() {
     if (!sshAuthSurfaceActive || !pinReady || isUnlocking || pinBusy) return
     if (String(pinEntry || "").length < Model.pinMinLength()) {
-      pinError = "PIN must be at least " + Model.pinMinLength() + " digits"
+      pinError = Tr.text("PIN must be at least ") + Model.pinMinLength() + " digits"
       return
     }
     pinError = ""
@@ -3184,9 +3189,9 @@ Item {
         // Refuse to keep serving guesses at the UI. The ciphertext goes too,
         // so re-enabling requires the master password again.
         clearPin()
-        pinError = "Too many incorrect PINs. PIN unlock has been removed -- use your master password."
+        pinError = Tr.text("Too many incorrect PINs. PIN unlock has been removed -- use your master password.")
       } else {
-        pinError = "Incorrect PIN (" + pinAttempts + " of " + pinMaxAttempts + ")"
+        pinError = Tr.text("Incorrect PIN (") + pinAttempts + " of " + pinMaxAttempts + ")"
       }
       return
     }
@@ -3207,7 +3212,7 @@ Item {
   function disablePinUnlock() {
     clearPin()
     pinError = ""
-    flashNotification("PIN unlock removed")
+    flashNotification(Tr.text("PIN unlock removed"))
   }
 
   onPinUnlockChanged: {
@@ -3269,10 +3274,10 @@ Item {
   function installMissing() {
     var pkgs = Model.missingPackages(dependencies)
     var cmd = Model.installPackagesCommand(pkgs,
-      pkgs.length === 1 ? "Bitwarden CLI" : "Bitwarden plugin dependencies")
+      pkgs.length === 1 ? "Bitwarden CLI" : Tr.text("Bitwarden plugin dependencies"))
     if (!cmd) return
     Quickshell.execDetached(cmd)
-    flashNotification("Installing -- this screen updates itself")
+    flashNotification(Tr.text("Installing -- this screen updates itself"))
   }
 
   function installOne(dep) {
@@ -3286,7 +3291,7 @@ Item {
     var cmd = Model.installPackagesCommand([dep.pkg], dep.label)
     if (!cmd) return
     Quickshell.execDetached(cmd)
-    flashNotification("Installing " + dep.pkg + " -- this screen updates itself")
+    flashNotification(Tr.text("Installing ") + dep.pkg + " -- this screen updates itself")
   }
 
   // Stepping past setup. The gate is what was holding the first status probe
@@ -3301,7 +3306,7 @@ Item {
 
   function runFingerprintSetup() {
     Quickshell.execDetached(Model.fingerprintSetupCommand())
-    flashNotification("Fingerprint setup opened -- this screen updates itself")
+    flashNotification(Tr.text("Fingerprint setup opened -- this screen updates itself"))
   }
 
   // A setting whose dependency is missing is inert; the cursor may sit on it,
@@ -3532,17 +3537,17 @@ Item {
     if (!fingerprintReady || status !== "locked" || isUnlocking) return
     if (fingerprintScanning || fingerprintPam.active) return
     if (!userName) {
-      fingerprintMessage = "Cannot determine current user for fingerprint verification"
+      fingerprintMessage = Tr.text("Cannot determine current user for fingerprint verification")
       return
     }
 
     errorMessage = ""
     fingerprintAuthorized = false
     fingerprintScanning = true
-    fingerprintMessage = "󰈷  Touch the fingerprint reader..."
+    fingerprintMessage = Tr.text("󰈷  Touch the fingerprint reader...")
     if (!fingerprintPam.start()) {
       fingerprintScanning = false
-      fingerprintMessage = "Could not start fingerprint verification"
+      fingerprintMessage = Tr.text("Could not start fingerprint verification")
     }
   }
 
@@ -3559,15 +3564,15 @@ Item {
 
     if (result === PamResult.Success) {
       fingerprintAuthorized = true
-      fingerprintMessage = "󰈷  Fingerprint verified, unlocking..."
+      fingerprintMessage = Tr.text("󰈷  Fingerprint verified, unlocking...")
       if (!keyringLookupMasterProc.running) {
         keyringLookupMasterProc.command = Model.keyringLookupMasterPasswordCommand()
         keyringLookupMasterProc.running = true
       }
     } else if (result === PamResult.MaxTries) {
-      fingerprintMessage = "Too many fingerprint attempts. Use your master password."
+      fingerprintMessage = Tr.text("Too many fingerprint attempts. Use your master password.")
     } else {
-      fingerprintMessage = "Fingerprint not recognised. Try again or use your master password."
+      fingerprintMessage = Tr.text("Fingerprint not recognised. Try again or use your master password.")
     }
   }
 
@@ -3584,7 +3589,7 @@ Item {
     var pw = String(raw || "")
     if (!pw) {
       fingerprintStored = false
-      fingerprintMessage = "No stored master password. Unlock with your password once to enable this."
+      fingerprintMessage = Tr.text("No stored master password. Unlock with your password once to enable this.")
       return
     }
     pendingUnlockFrom = "fingerprint"
@@ -3612,7 +3617,7 @@ Item {
   function submitFingerprintSetup() {
     if (fpBusy || keyringStoreMasterProc.running) return
     if (!fpSetupMaster) {
-      fpError = "Master password is required to enable fingerprint unlock"
+      fpError = Tr.text("Master password is required to enable fingerprint unlock")
       return
     }
     fpError = ""
@@ -3641,17 +3646,17 @@ Item {
       fpBusy = false
       fpSetupMaster = ""
       if (exitCode !== 0) {
-        fpError = "Could not save the master password. Is the OS keyring available?"
+        fpError = Tr.text("Could not save the master password. Is the OS keyring available?")
         return
       }
       writeSetting("fingerprintUnlock", true, "bool")
-      flashNotification("Fingerprint unlock enabled")
+      flashNotification(Tr.text("Fingerprint unlock enabled"))
       currentScreen = "settings"
       return
     }
 
     if (exitCode !== 0) {
-      errorMessage = "Could not save master password to the OS keyring, so fingerprint unlock is unavailable."
+      errorMessage = Tr.text("Could not save master password to the OS keyring, so fingerprint unlock is unavailable.")
     }
   }
 
@@ -3660,7 +3665,7 @@ Item {
     fingerprintStored = false
     cancelFingerprintUnlock()
     fingerprintMessage = ""
-    flashNotification("Fingerprint unlock forgotten")
+    flashNotification(Tr.text("Fingerprint unlock forgotten"))
   }
 
   onFingerprintUnlockChanged: {
@@ -3689,7 +3694,7 @@ Item {
   function unlockVaultWithPassword(pass) {
     var p = String(pass === undefined || pass === null ? "" : pass)
     if (!p) {
-      errorMessage = "Master password required"
+      errorMessage = Tr.text("Master password required")
       return
     }
     cancelFingerprintUnlock()
@@ -3719,7 +3724,7 @@ Item {
         pendingUnlockFrom = ""
         requestMasterCredentialClear()
         fingerprintStored = false
-        fingerprintMessage = "Stored password no longer valid. Unlock with your master password to re-enable fingerprint unlock."
+        fingerprintMessage = Tr.text("Stored password no longer valid. Unlock with your master password to re-enable fingerprint unlock.")
         errorMessage = ""
         focusAppropriateField()
         Qt.callLater(prepareUnlock)
@@ -3728,7 +3733,7 @@ Item {
       if (pendingUnlockFrom === "pin") {
         pendingUnlockFrom = ""
         clearPin()
-        pinError = "Your master password changed, so the PIN no longer works. Unlock with your password and set a new PIN."
+        pinError = Tr.text("Your master password changed, so the PIN no longer works. Unlock with your password and set a new PIN.")
         errorMessage = ""
         focusAppropriateField()
         Qt.callLater(prepareUnlock)
@@ -3737,9 +3742,9 @@ Item {
       if (err.indexOf("not logged in") !== -1) {
         status = "unauthenticated"
         currentScreen = "login"
-        errorMessage = "You are not logged in. Please log in below."
+        errorMessage = Tr.text("You are not logged in. Please log in below.")
       } else {
-        errorMessage = err || "Unlock failed: invalid master password"
+        errorMessage = err || Tr.text("Unlock failed: invalid master password")
         Qt.callLater(prepareUnlock)
       }
     }
@@ -3770,7 +3775,7 @@ Item {
     isUnlocking = false
     unlockSubmitted = false
     if (!s) {
-      errorMessage = "Unlock did not return a session key"
+      errorMessage = Tr.text("Unlock did not return a session key")
       return
     }
 
@@ -3778,7 +3783,7 @@ Item {
     vaultEpoch += 1
     status = "unlocked"
     currentScreen = "main"
-    flashNotification("Vault unlocked successfully!")
+    flashNotification(Tr.text("Vault unlocked successfully!"))
 
     storeCurrentSession()
 
@@ -3826,7 +3831,7 @@ Item {
     status = "locked"
     currentScreen = "locked"
     fingerprintMessage = ""
-    flashNotification("Vault locked")
+    flashNotification(Tr.text("Vault locked"))
     focusAppropriateField()
     if (sshAuthSurfaceActive) startFingerprintUnlock()
   }
@@ -4130,7 +4135,7 @@ Item {
     if (syncReloadPending) {
       syncReloadPending = false
       isSyncing = false
-      flashNotification("Vault synced with Bitwarden")
+      flashNotification(Tr.text("Vault synced with Bitwarden"))
     }
     if (metadataLoadPending) deferredMetadataTimer.restart()
     // The first read of a session usually beats the helper's handshake, so it
@@ -4247,13 +4252,13 @@ Item {
   // Labels for the collapsed buttons, so the current filter is readable
   // without opening anything.
   function folderFilterLabel() {
-    if (selectedFolder === "all") return "All"
+    if (selectedFolder === "all") return Tr.text("All")
     if (selectedFolder === "none") return "Unfiled"
     return Model.folderName(folders, selectedFolder) || "Folder"
   }
 
   function organizationFilterLabel() {
-    if (selectedOrg === "all") return "All"
+    if (selectedOrg === "all") return Tr.text("All")
     if (selectedOrg === "personal") return "Personal"
     for (var i = 0; i < organizations.length; i++) {
       if (organizations[i].id === selectedOrg) return organizations[i].name
@@ -4265,7 +4270,7 @@ Item {
     for (var i = 0; i < categories.length; i++) {
       if (categories[i].id === selectedCategory) return categories[i].label
     }
-    return "All"
+    return Tr.text("All")
   }
 
   // Option rows for whichever group is open, in one shape so the three lists
@@ -4274,14 +4279,14 @@ Item {
     var out = []
     var i
     if (group === "folders") {
-      out.push({ id: "all", label: "All Folders", icon: "󰉋", active: selectedFolder === "all" })
-      out.push({ id: "none", label: "No Folder", icon: "󰉖", active: selectedFolder === "none" })
+      out.push({ id: "all", label: Tr.text("All Folders"), icon: "󰉋", active: selectedFolder === "all" })
+      out.push({ id: "none", label: Tr.text("No Folder"), icon: "󰉖", active: selectedFolder === "none" })
       for (i = 0; i < folders.length; i++) {
         out.push({ id: folders[i].id, label: folders[i].name, icon: "󰉋", active: selectedFolder === folders[i].id })
       }
     } else if (group === "organizations") {
-      out.push({ id: "all", label: "All Organizations", icon: "󰦑", active: selectedOrg === "all" })
-      out.push({ id: "personal", label: "My Vault", icon: "", active: selectedOrg === "personal" })
+      out.push({ id: "all", label: Tr.text("All Organizations"), icon: "󰦑", active: selectedOrg === "all" })
+      out.push({ id: "personal", label: Tr.text("My Vault"), icon: "", active: selectedOrg === "personal" })
       for (i = 0; i < organizations.length; i++) {
         out.push({ id: organizations[i].id, label: organizations[i].name, icon: "󰓹", active: selectedOrg === organizations[i].id })
       }
@@ -4450,16 +4455,16 @@ Item {
   }
 
   function formFolderLabel() {
-    if (!formFolderId) return "No Folder"
-    return Model.folderName(folders, formFolderId) || "No Folder"
+    if (!formFolderId) return Tr.text("No Folder")
+    return Model.folderName(folders, formFolderId) || Tr.text("No Folder")
   }
 
   function formOrgLabel() {
-    if (!formOrgId || formOrgId === "personal") return "My Vault"
+    if (!formOrgId || formOrgId === "personal") return Tr.text("My Vault")
     for (var i = 0; i < organizations.length; i++) {
       if (organizations[i].id === formOrgId) return organizations[i].name
     }
-    return "My Vault"
+    return Tr.text("My Vault")
   }
 
   function submitNewFolder() {
@@ -4475,7 +4480,7 @@ Item {
     creatingFolder = false
     if (vaultReadIsStale("folderCreate")) return
     if (exitCode !== 0) {
-      errorMessage = "Could not create folder"
+      errorMessage = Tr.text("Could not create folder")
       return
     }
     var created = null
@@ -4484,7 +4489,7 @@ Item {
     // Creating a folder from the item form is only ever a prelude to filing
     // the item into it, so select it straight away.
     if (created && created.id) formFolderId = String(created.id)
-    flashNotification("Folder created")
+    flashNotification(Tr.text("Folder created"))
     loadFolders(true)
   }
 
@@ -4506,7 +4511,7 @@ Item {
     } else {
       isSyncing = false
       syncReloadPending = false
-      errorMessage = "Sync failed"
+      errorMessage = Tr.text("Sync failed")
     }
   }
 
@@ -4538,7 +4543,7 @@ Item {
       beginVaultRead("detail")
       if (item.typeCode === 5) {
         isLoading = false
-        errorMessage = "SSH keys are read-only public records"
+        errorMessage = Tr.text("SSH keys are read-only public records")
         currentScreen = "main"
         return
       }
@@ -4561,7 +4566,7 @@ Item {
       detailItem = parsed
       detailPassword = parsed.password
     } else {
-      errorMessage = "Could not load item details"
+      errorMessage = Tr.text("Could not load item details")
     }
   }
 
@@ -4606,7 +4611,7 @@ Item {
     if (attachmentBusyId !== "" || attachmentQueue.length === 0) return
     if (!session) {
       attachmentQueue = []
-      errorMessage = "Vault is locked or session expired. Please unlock your vault."
+      errorMessage = Tr.text("Vault is locked or session expired. Please unlock your vault.")
       return
     }
     var next = attachmentQueue.slice()
@@ -4628,8 +4633,8 @@ Item {
       // bw's own message is the useful one -- "Not found." for an attachment
       // that has since been deleted, or a permission error on the directory.
       var err = String(stderrText || "").trim().split("\n")[0]
-      errorMessage = err ? ("Could not save the attachment: " + err)
-                         : "Could not save the attachment"
+      errorMessage = err ? (Tr.text("Could not save the attachment: ") + err)
+                         : Tr.text("Could not save the attachment")
       attachmentQueue = []
       return
     }
@@ -4638,7 +4643,7 @@ Item {
     for (var k in attachmentSaved) saved[k] = attachmentSaved[k]
     saved[id] = path
     attachmentSaved = saved
-    flashNotification("Saved " + Model.baseName(path))
+    flashNotification(Tr.text("Saved ") + Model.baseName(path))
     pumpAttachmentQueue()
   }
 
@@ -4696,7 +4701,7 @@ Item {
     if (exitCode === 0) onTotpFinished(itemId, code)
     else if (totpCopyItemId === itemId) {
       totpCopyItemId = ""
-      errorMessage = "Could not read this TOTP code"
+      errorMessage = Tr.text("Could not read this TOTP code")
     }
 
     continueTotpQueue(false)
@@ -4734,8 +4739,8 @@ Item {
     }
     if (totpCopyItemId === itemId) {
       totpCopyItemId = ""
-      if (c) copyToClipboard(c, "TOTP code")
-      else errorMessage = "Could not read this TOTP code"
+      if (c) copyToClipboard(c, Tr.text("TOTP code"))
+      else errorMessage = Tr.text("Could not read this TOTP code")
     }
   }
 
@@ -4889,13 +4894,13 @@ Item {
 
   function startEditItem(item) {
     if (!item || item.typeCode === 5) {
-      if (item && item.typeCode === 5) errorMessage = "SSH keys are read-only public records"
+      if (item && item.typeCode === 5) errorMessage = Tr.text("SSH keys are read-only public records")
       return
     }
     // The vault has not answered about this row yet, and on a create it does
     // not have an id to edit. Editing it would race the save it is waiting on.
     if (item.pending) {
-      errorMessage = "Still saving this item -- one moment"
+      errorMessage = Tr.text("Still saving this item -- one moment")
       return
     }
     formIsEditing = true
@@ -4937,7 +4942,7 @@ Item {
   // flight is refused with a reason rather than silently dropped.
   function saveItemForm() {
     if (pendingSave) {
-      errorMessage = "Still saving " + pendingSave.name + " -- one moment"
+      errorMessage = Tr.text("Still saving ") + pendingSave.name + " -- one moment"
       return
     }
 
@@ -4954,7 +4959,7 @@ Item {
       ? Model.buildEditPayload(detailItem, formName, formUsername, formPassword, formTotp, formUri, formNotes, formFavorite, formOrgId, formFolderId, formCollectionIds, formTypeFields())
       : Model.buildCreatePayload(formTypeCode, formName, formUsername, formPassword, formTotp, formUri, formNotes, formFavorite, formOrgId, formFolderId, formCollectionIds, formTypeFields())
     if (!payload) {
-      errorMessage = editing ? "This item is read-only" : "This item type is read-only"
+      errorMessage = editing ? Tr.text("This item is read-only") : Tr.text("This item type is read-only")
       return
     }
 
@@ -5016,14 +5021,14 @@ Item {
         itemsLoadedAt = Date.now()
         refreshDerivedFromItems()
         failedSave = { name: save.name, form: save.form }
-        errorMessage = "Could not save " + save.name + ". " + (stderrText || "")
+        errorMessage = Tr.text("Could not save ") + save.name + ". " + (stderrText || "")
       } else {
-        errorMessage = stderrText || "Failed to save item"
+        errorMessage = stderrText || Tr.text("Failed to save item")
       }
       return
     }
 
-    flashNotification(save && save.isCreate ? "Item created successfully!" : "Item updated successfully!")
+    flashNotification(save && save.isCreate ? Tr.text("Item created successfully!") : Tr.text("Item updated successfully!"))
 
     // The save printed the item the vault now holds, so the list can be
     // brought up to date from that instead of re-reading and re-decrypting
@@ -5055,11 +5060,11 @@ Item {
   function deleteCurrentItem() {
     if (!detailItem || !detailItem.id || detailItem.typeCode === 5) return
     if (detailItem.pending || Model.isPendingItemId(detailItem.id)) {
-      errorMessage = "Still saving this item -- one moment"
+      errorMessage = Tr.text("Still saving this item -- one moment")
       return
     }
     if (pendingDelete) {
-      errorMessage = "Still deleting " + pendingDelete.name + " -- one moment"
+      errorMessage = Tr.text("Still deleting ") + pendingDelete.name + " -- one moment"
       return
     }
 
@@ -5093,7 +5098,7 @@ Item {
     if (exitCode === 0) {
       // The row is already gone and nothing else about the vault changed, so
       // there is nothing left to read.
-      flashNotification("Item deleted")
+      flashNotification(Tr.text("Item deleted"))
       return
     }
 
@@ -5103,9 +5108,9 @@ Item {
       items = Model.replaceItemById(items, removal.id, removal.previous)
       itemsLoadedAt = Date.now()
       refreshDerivedFromItems()
-      errorMessage = "Could not delete " + removal.name + ". " + (stderrText || "")
+      errorMessage = Tr.text("Could not delete ") + removal.name + ". " + (stderrText || "")
     } else {
-      errorMessage = stderrText || "Failed to delete item"
+      errorMessage = stderrText || Tr.text("Failed to delete item")
     }
   }
 
@@ -5162,8 +5167,8 @@ Item {
         && sshCapability.state === "unconfirmed") {
       return sshCapability.message
     }
-    if (items.length === 0) return "Vault is empty"
-    return "No items match '" + searchQuery + "'"
+    if (items.length === 0) return Tr.text("Vault is empty")
+    return Tr.text("No items match '") + searchQuery + "'"
   }
 
   function selectCategory(catId) {
@@ -5271,7 +5276,7 @@ Item {
   function requestPasswordCopy(itemId, typeCode) {
     if (!session || !itemId) return
     if (copyPasswordProc.running) {
-      errorMessage = "Another password copy is still loading"
+      errorMessage = Tr.text("Another password copy is still loading")
       return
     }
     passwordCopyItemId = String(itemId)
@@ -5290,10 +5295,10 @@ Item {
     if (vaultReadIsStale("passwordCopy")) return
     var password = String(text || "")
     if (exitCode === 0 && requested && password) {
-      copyToClipboard(password, "Password")
+      copyToClipboard(password, Tr.text("Password"))
       return
     }
-    errorMessage = "Could not read this password"
+    errorMessage = Tr.text("Could not read this password")
   }
 
   // Smart sequential Enter handler: Copies Password, then arms and auto-copies TOTP
@@ -5353,31 +5358,31 @@ Item {
     learnFromPick(item)
     var pass = (detailItem && detailItem.id === item.id && detailPassword) ? detailPassword : (item.password || "")
     if (pass) {
-      copyToClipboard(pass, "Password")
+      copyToClipboard(pass, Tr.text("Password"))
       return
     }
     if (session) {
       requestPasswordCopy(item.id, item.typeCode)
     } else {
-      errorMessage = "Vault is locked or session expired. Please unlock your vault."
+      errorMessage = Tr.text("Vault is locked or session expired. Please unlock your vault.")
     }
   }
 
   function copyUsername(item) {
     closeFilterGroup()
     if (!item || !item.username) return
-    copyToClipboard(item.username, "Username")
+    copyToClipboard(item.username, Tr.text("Username"))
   }
 
   function copyTotpCode(item) {
     closeFilterGroup()
     if (!item || !Model.isLoginItem(item)) return
     if (liveTotp && item.id === (detailItem ? detailItem.id : "")) {
-      copyToClipboard(liveTotp, "TOTP code")
+      copyToClipboard(liveTotp, Tr.text("TOTP code"))
       return
     }
     if (totpFollowupActive && totpFollowupItem && totpFollowupItem.id === item.id && totpFollowupCode) {
-      copyToClipboard(totpFollowupCode, "TOTP code")
+      copyToClipboard(totpFollowupCode, Tr.text("TOTP code"))
       return
     }
     fetchTotp(item.id, true)
@@ -5389,14 +5394,14 @@ Item {
     var resolved = Model.normalizeOpenableUrl(url)
     if (!resolved.ok) {
       errorMessage = resolved.reason === "ambiguous"
-        ? "Refusing to open an ambiguous link containing a backslash"
+        ? Tr.text("Refusing to open an ambiguous link containing a backslash")
         : resolved.scheme
-        ? ("Refusing to open a " + resolved.scheme + ": link -- only http and https are opened")
-        : "That item has no link to open"
+        ? (Tr.text("Refusing to open a ") + resolved.scheme + ": link -- only http and https are opened")
+        : Tr.text("That item has no link to open")
       return
     }
     Quickshell.execDetached(["xdg-open", resolved.url])
-    flashNotification("Opening " + resolved.url)
+    flashNotification(Tr.text("Opening ") + resolved.url)
   }
 
   function flashNotification(msg) {
@@ -5468,7 +5473,7 @@ Item {
         // clipboard, and a notification is not a private channel: the daemon
         // keeps history and can render the body over a lock screen. The panel
         // shows the digits on screen instead, where you asked for them.
-        Quickshell.execDetached(["notify-send", "--app-name", "Bitwarden", "-t", "4000", "TOTP Code Copied", "2FA verification code ready to paste"])
+        Quickshell.execDetached(["notify-send", "--app-name", "Bitwarden", "-t", "4000", Tr.text("TOTP Code Copied"), "2FA verification code ready to paste"])
         root.totpFollowupActive = false
       }
     }
@@ -6118,7 +6123,7 @@ Item {
     onExited: function(exitCode) {
       if (exitCode !== 0) {
         root.settingsFlash = ""
-        root.errorMessage = (settingWriteStderr.text || "").trim() || "Could not save setting to shell.json"
+        root.errorMessage = (settingWriteStderr.text || "").trim() || Tr.text("Could not save setting to shell.json")
       }
     }
   }
@@ -6163,7 +6168,7 @@ Item {
       } else {
         root.fingerprintAuthorized = false
         root.fingerprintStored = false
-        root.fingerprintMessage = "Stored master password unavailable. Use your password."
+        root.fingerprintMessage = Tr.text("Stored master password unavailable. Use your password.")
       }
     }
   }
@@ -6245,7 +6250,7 @@ Item {
     onError: function(error) {
       root.fingerprintScanning = false
       root.fingerprintAuthorized = false
-      root.fingerprintMessage = "Fingerprint verification unavailable"
+      root.fingerprintMessage = Tr.text("Fingerprint verification unavailable")
     }
   }
 
@@ -6380,7 +6385,7 @@ Item {
       } else {
         root.isLoading = false
         if (!root.vaultReadIsStale("detail")) {
-          root.errorMessage = String(getItemStderr.text || "").trim() || "Could not load item details"
+          root.errorMessage = String(getItemStderr.text || "").trim() || Tr.text("Could not load item details")
         }
       }
     }
@@ -6723,10 +6728,10 @@ Item {
         if (root.currentScreen === "detail") {
           if (root.detailIsCard) {
             if (root.detailCard && root.detailCard.number) {
-              root.copyToClipboard(root.detailCard.number, "Card number")
+              root.copyToClipboard(root.detailCard.number, Tr.text("Card number"))
             }
           } else if (root.detailIsLoginLike && root.detailPassword) {
-            root.copyToClipboard(root.detailPassword, "Password")
+            root.copyToClipboard(root.detailPassword, Tr.text("Password"))
           }
         }
       }
@@ -6748,17 +6753,17 @@ Item {
           // everywhere and does nothing on two of the four types.
           if (lower === "y" || lower === "p") {
             if (root.detailIsCard) {
-              if (root.detailCard && root.detailCard.number) root.copyToClipboard(root.detailCard.number, "Card number")
+              if (root.detailCard && root.detailCard.number) root.copyToClipboard(root.detailCard.number, Tr.text("Card number"))
             } else if (root.detailPassword) {
-              root.copyToClipboard(root.detailPassword, "Password")
+              root.copyToClipboard(root.detailPassword, Tr.text("Password"))
             }
           } else if (lower === "n") {
             if (root.detailIsCard && root.detailCard && root.detailCard.number) {
-              root.copyToClipboard(root.detailCard.number, "Card number")
+              root.copyToClipboard(root.detailCard.number, Tr.text("Card number"))
             }
           } else if (lower === "k") {
             if (root.detailIsCard && root.detailCard && root.detailCard.code) {
-              root.copyToClipboard(root.detailCard.code, "Security code")
+              root.copyToClipboard(root.detailCard.code, Tr.text("Security code"))
             }
           } else if (lower === "u" || lower === "c") {
             // `u` copies the identifier, `c` the contact address. On a login
@@ -6766,12 +6771,12 @@ Item {
             // always done.
             if (root.detailIsIdentity && root.detailIdentity) {
               if (lower === "c" && root.detailIdentity.email) {
-                root.copyToClipboard(root.detailIdentity.email, "Email")
+                root.copyToClipboard(root.detailIdentity.email, Tr.text("Email"))
               } else if (root.detailIdentity.username) {
-                root.copyToClipboard(root.detailIdentity.username, "Username")
+                root.copyToClipboard(root.detailIdentity.username, Tr.text("Username"))
               }
             } else if (root.detailItem && root.detailItem.username) {
-              root.copyToClipboard(root.detailItem.username, "Username")
+              root.copyToClipboard(root.detailItem.username, Tr.text("Username"))
             }
           } else if (lower === "m") {
             if (root.liveTotp) root.copyToClipboard(root.liveTotp, "TOTP")
@@ -6802,16 +6807,16 @@ Item {
           title: "Bitwarden"
           meta: {
             if (root.status === "unlocked") {
-              if (root.isSyncing) return "Syncing..."
-              if (root.isLoading && root.items.length === 0) return "Loading items..."
+              if (root.isSyncing) return Tr.text("Syncing...")
+              if (root.isLoading && root.items.length === 0) return Tr.text("Loading items...")
               // The email arrives with `bw status`, which lags the item list on
               // a cold start and after a terminal-login handoff. Fall back to
               // the count so the subtitle is never blank in that gap.
-              return root.userEmail || (root.filteredItems.length + " items")
+              return root.userEmail || (root.filteredItems.length + Tr.text(" items"))
             }
-            if (root.status === "locked") return "Vault Locked"
-            if (root.status === "checking") return "Checking status..."
-            return "Log In"
+            if (root.status === "locked") return Tr.text("Vault Locked")
+            if (root.status === "checking") return Tr.text("Checking status...")
+            return Tr.text("Log In")
           }
           foreground: root.fg
           fontFamily: root.fontFamily
@@ -6831,7 +6836,7 @@ Item {
             PanelActionButton {
               visible: root.status === "unlocked" && root.activeScreen === "main"
               iconText: "󰐕"
-              tooltipText: "New item (n)"
+              tooltipText: Tr.text("New item (n)")
               fontFamily: root.fontFamily
               onClicked: root.startAddNewItem()
             }
@@ -6840,7 +6845,7 @@ Item {
             PanelActionButton {
               visible: root.status === "unlocked"
               iconText: "󰑐"
-              tooltipText: root.isSyncing ? "Syncing..." : "Sync vault (r)"
+              tooltipText: root.isSyncing ? Tr.text("Syncing...") : Tr.text("Sync vault (r)")
               fontFamily: root.fontFamily
               enabled: !root.isSyncing
               onClicked: root.syncVault()
@@ -6850,7 +6855,7 @@ Item {
             PanelActionButton {
               visible: root.status === "unlocked" && root.activeScreen !== "sends"
               iconText: "󰒗"
-              tooltipText: "Bitwarden Send (Alt+S)"
+              tooltipText: Tr.text("Bitwarden Send (Alt+S)")
               fontFamily: root.fontFamily
               onClicked: root.openSends()
             }
@@ -6859,7 +6864,7 @@ Item {
             PanelActionButton {
               visible: root.status === "unlocked" && root.activeScreen !== "generator"
               iconText: "󰌆"
-              tooltipText: "Password generator (g)"
+              tooltipText: Tr.text("Password generator (g)")
               fontFamily: root.fontFamily
               onClicked: root.openGenerator()
             }
@@ -6868,7 +6873,7 @@ Item {
             PanelActionButton {
               visible: root.activeScreen !== "settings" && root.activeScreen !== "setup" && root.activeScreen !== "pin"
               iconText: "󰒓"
-              tooltipText: "Settings (s)"
+              tooltipText: Tr.text("Settings (s)")
               fontFamily: root.fontFamily
               onClicked: root.openSettings()
             }
@@ -6877,7 +6882,7 @@ Item {
             PanelActionButton {
               visible: root.status === "unlocked"
               iconText: "󰌾"
-              tooltipText: "Lock vault (l)"
+              tooltipText: Tr.text("Lock vault (l)")
               fontFamily: root.fontFamily
               onClicked: root.lockVault()
             }
@@ -6885,7 +6890,7 @@ Item {
             // Close Panel Button
             PanelActionButton {
               iconText: "󰅖"
-              tooltipText: "Close (Esc)"
+              tooltipText: Tr.text("Close (Esc)")
               fontFamily: root.fontFamily
               onClicked: root.close()
             }
@@ -6925,7 +6930,7 @@ Item {
 
               Text {
                 textFormat: Text.PlainText
-                text: "Password copied! Press Enter for TOTP"
+                text: Tr.text("Password copied! Press Enter for TOTP")
                 color: root.fg
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -6934,7 +6939,7 @@ Item {
 
               Text {
                 textFormat: Text.PlainText
-                text: root.totpFollowupCode ? ("Code: " + root.totpFollowupCode + " (expires in " + root.totpSecRemaining + "s)") : "Fetching 2FA code..."
+                text: root.totpFollowupCode ? (Tr.text("Code: ") + root.totpFollowupCode + Tr.text(" (expires in ") + root.totpSecRemaining + "s)") : Tr.text("Fetching 2FA code...")
                 color: Color.accent
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -6944,7 +6949,7 @@ Item {
             Button {
               id: copyFollowupTotpBtn
               anchors.verticalCenter: parent.verticalCenter
-              text: "Copy TOTP (Enter)"
+              text: Tr.text("Copy TOTP (Enter)")
               selected: true
               accent: Color.accent
               fontFamily: root.fontFamily
@@ -7042,9 +7047,9 @@ Item {
               }
 
               Button {
-                text: "Resume Signing Now"
+                text: Tr.text("Resume Signing Now")
                 iconText: "󰐊"
-                tooltipText: "End the cooldown; the next signing request asks again"
+                tooltipText: Tr.text("End the cooldown; the next signing request asks again")
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
                 onClicked: root.resumeSshSigning()
@@ -7082,7 +7087,7 @@ Item {
               spacing: Style.space(8)
 
               Button {
-                text: root.sendMode === "create" ? "Back to Sends" : "Back (Esc)"
+                text: root.sendMode === "create" ? Tr.text("Back to Sends") : Tr.text("Back (Esc)")
                 iconText: "󰁍"
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
@@ -7094,7 +7099,7 @@ Item {
 
               Button {
                 visible: root.sendMode === "list"
-                text: "New Send"
+                text: Tr.text("New Send")
                 iconText: "󰐕"
                 selected: true
                 accent: Color.accent
@@ -7105,7 +7110,7 @@ Item {
 
               Button {
                 visible: root.sendMode === "list"
-                text: "Refresh"
+                text: Tr.text("Refresh")
                 iconText: "󰑐"
                 iconSpinning: root.sendsLoading
                 fontFamily: root.fontFamily
@@ -7135,7 +7140,7 @@ Item {
                 textFormat: Text.PlainText
                 visible: !root.sendsLoading && root.sends.length === 0
                 width: parent.width
-                text: "No Sends yet. A Send shares a secret through a link that expires on its own -- useful for handing someone a credential without it living in a chat log."
+                text: Tr.text("No Sends yet. A Send shares a secret through a link that expires on its own -- useful for handing someone a credential without it living in a chat log.")
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -7145,7 +7150,7 @@ Item {
               Text {
                 textFormat: Text.PlainText
                 visible: root.sendsLoading
-                text: "Loading Sends..."
+                text: Tr.text("Loading Sends...")
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -7221,7 +7226,7 @@ Item {
                         Text {
                           textFormat: Text.PlainText
                           visible: modelData.passwordSet
-                          text: "\u00b7 󰌾 password"
+                          text: Tr.text("\u00b7 󰌾 password")
                           color: Color.accent
                           font.family: root.fontFamily
                           font.pixelSize: Style.font.caption
@@ -7232,7 +7237,7 @@ Item {
                     PanelActionButton {
                       anchors.verticalCenter: parent.verticalCenter
                       iconText: "󰆏"
-                      tooltipText: "Copy Send link"
+                      tooltipText: Tr.text("Copy Send link")
                       fontFamily: root.fontFamily
                       onClicked: root.copySendLink(modelData)
                     }
@@ -7240,7 +7245,7 @@ Item {
                     PanelActionButton {
                       anchors.verticalCenter: parent.verticalCenter
                       iconText: "󰆴"
-                      tooltipText: "Delete this Send"
+                      tooltipText: Tr.text("Delete this Send")
                       fontFamily: root.fontFamily
                       enabled: !root.sendBusy
                       onClicked: root.deleteSend(modelData)
@@ -7256,20 +7261,20 @@ Item {
               width: parent.width
               spacing: Style.space(8)
 
-              Text { textFormat: Text.PlainText; text: "NAME"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("NAME"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
               TextField {
                 id: sendNameField
                 width: parent.width
-                placeholderText: "What is this? (optional)"
+                placeholderText: Tr.text("What is this? (optional)")
                 text: root.sendFormName
                 onTextChanged: root.sendFormName = text
                 enabled: !root.sendBusy
               }
 
-              Text { textFormat: Text.PlainText; text: "TEXT TO SEND"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("TEXT TO SEND"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
               TextField {
                 width: parent.width
-                placeholderText: "The secret to share..."
+                placeholderText: Tr.text("The secret to share...")
                 text: root.sendFormText
                 onTextChanged: root.sendFormText = text
                 enabled: !root.sendBusy
@@ -7280,8 +7285,8 @@ Item {
                 spacing: Style.space(6)
 
                 Button {
-                  text: "Hide text by default"
-                  tooltipText: "The recipient must click to reveal it"
+                  text: Tr.text("Hide text by default")
+                  tooltipText: Tr.text("The recipient must click to reveal it")
                   selected: root.sendFormHidden
                   accent: Color.accent
                   fontFamily: root.fontFamily
@@ -7297,7 +7302,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   width: parent.width - Style.space(170)
-                  text: "Delete after"
+                  text: Tr.text("Delete after")
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -7305,7 +7310,7 @@ Item {
                 Text {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
-                  text: "days"
+                  text: Tr.text("days")
                   color: root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -7330,7 +7335,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   width: parent.width - Style.space(170)
-                  text: "Maximum views"
+                  text: Tr.text("Maximum views")
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -7338,7 +7343,7 @@ Item {
                 Text {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
-                  text: root.sendFormMaxAccess === 0 ? "unlimited" : ""
+                  text: root.sendFormMaxAccess === 0 ? Tr.text("unlimited") : ""
                   color: root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -7356,10 +7361,10 @@ Item {
                 }
               }
 
-              Text { textFormat: Text.PlainText; text: "PASSWORD (OPTIONAL)"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("PASSWORD (OPTIONAL)"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
               TextField {
                 width: parent.width
-                placeholderText: "Recipient must enter this to open the Send..."
+                placeholderText: Tr.text("Recipient must enter this to open the Send...")
                 password: true
                 text: root.sendFormPassword
                 onTextChanged: root.sendFormPassword = text
@@ -7368,7 +7373,7 @@ Item {
 
               Button {
                 width: parent.width
-                text: root.sendBusy ? "Creating..." : "Create Send & Copy Link"
+                text: root.sendBusy ? Tr.text("Creating...") : Tr.text("Create Send & Copy Link")
                 iconText: root.sendBusy ? "󰑐" : "󰒗"
                 iconSpinning: root.sendBusy
                 selected: true
@@ -7411,7 +7416,7 @@ Item {
 
               Text {
                 textFormat: Text.PlainText
-                text: "Enable fingerprint unlock"
+                text: Tr.text("Enable fingerprint unlock")
                 color: root.fg
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.title
@@ -7421,7 +7426,7 @@ Item {
               Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: "A fingerprint proves you are present but cannot produce your master password, and bw unlock accepts nothing else. The password is stored in the OS login keyring, and a verified fingerprint is the gate on reading it back."
+                text: Tr.text("A fingerprint proves you are present but cannot produce your master password, and bw unlock accepts nothing else. The password is stored in the OS login keyring, and a verified fingerprint is the gate on reading it back.")
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -7431,7 +7436,7 @@ Item {
               Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: "Anyone who can read your unlocked login keyring can read the password. A PIN stores it encrypted instead."
+                text: Tr.text("Anyone who can read your unlocked login keyring can read the password. A PIN stores it encrypted instead.")
                 color: root.urgent
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -7443,12 +7448,12 @@ Item {
               width: parent.width
               spacing: Style.space(8)
 
-              Text { textFormat: Text.PlainText; text: "MASTER PASSWORD"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("MASTER PASSWORD"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
 
               TextField {
                 id: fpMasterField
                 width: parent.width
-                placeholderText: "Needed once, to store for fingerprint unlock..."
+                placeholderText: Tr.text("Needed once, to store for fingerprint unlock...")
                 password: true
                 text: root.fpSetupMaster
                 onTextChanged: root.fpSetupMaster = text
@@ -7472,7 +7477,7 @@ Item {
                 spacing: Style.space(8)
 
                 Button {
-                  text: root.fpBusy ? "Saving..." : "Enable"
+                  text: root.fpBusy ? Tr.text("Saving...") : Tr.text("Enable")
                   iconText: root.fpBusy ? "󰑐" : "󰈷"
                   iconSpinning: root.fpBusy
                   selected: true
@@ -7483,7 +7488,7 @@ Item {
                 }
 
                 Button {
-                  text: "Cancel"
+                  text: Tr.text("Cancel")
                   iconText: "󰅖"
                   fontFamily: root.fontFamily
                   enabled: !root.fpBusy
@@ -7526,7 +7531,7 @@ Item {
               spacing: Style.space(8)
 
               Button {
-                text: root.generatorFeedsForm ? "Back to item (Esc)" : "Back (Esc)"
+                text: root.generatorFeedsForm ? Tr.text("Back to item (Esc)") : Tr.text("Back (Esc)")
                 iconText: "󰁍"
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
@@ -7537,7 +7542,7 @@ Item {
               // the value back to the password field and return there.
               Button {
                 visible: root.generatorFeedsForm
-                text: "Use this password (Enter)"
+                text: Tr.text("Use this password (Enter)")
                 iconText: "󰄬"
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
@@ -7566,7 +7571,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   width: parent.width - Style.space(90)
-                  text: root.genBusy ? "Generating..." : (root.genValue || "-")
+                  text: root.genBusy ? Tr.text("Generating...") : (root.genValue || "-")
                   color: Color.accent
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.subtitle
@@ -7579,7 +7584,7 @@ Item {
                 PanelActionButton {
                   anchors.verticalCenter: parent.verticalCenter
                   iconText: "󰑐"
-                  tooltipText: "Regenerate"
+                  tooltipText: Tr.text("Regenerate")
                   fontFamily: root.fontFamily
                   enabled: !root.genBusy
                   onClicked: root.regenerate()
@@ -7588,7 +7593,7 @@ Item {
                 PanelActionButton {
                   anchors.verticalCenter: parent.verticalCenter
                   iconText: "󰆏"
-                  tooltipText: "Copy"
+                  tooltipText: Tr.text("Copy")
                   fontFamily: root.fontFamily
                   enabled: !root.genBusy && root.genValue !== ""
                   onClicked: root.copyGenerated()
@@ -7607,7 +7612,7 @@ Item {
                 width: parent.width
                 Text {
                   textFormat: Text.PlainText
-                  text: parent.parent.strength.label
+                  text: Tr.text(parent.parent.strength.label)
                   color: Color.accent
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -7616,7 +7621,7 @@ Item {
                 Item { width: Style.space(6); height: 1 }
                 Text {
                   textFormat: Text.PlainText
-                  text: "~" + parent.parent.strength.bits + " bits of entropy"
+                  text: "~" + parent.parent.strength.bits + Tr.text(" bits of entropy")
                   color: root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -7646,7 +7651,7 @@ Item {
               spacing: Style.space(8)
 
               Button {
-                text: "Password"
+                text: Tr.text("Password")
                 iconText: "󰌆"
                 selected: root.genOpts.type === "password"
                 accent: Color.accent
@@ -7656,7 +7661,7 @@ Item {
               }
 
               Button {
-                text: "Passphrase"
+                text: Tr.text("Passphrase")
                 iconText: "󰈚"
                 selected: root.genOpts.type === "passphrase"
                 accent: Color.accent
@@ -7679,7 +7684,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   width: parent.width - Style.space(170)
-                  text: "Length"
+                  text: Tr.text("Length")
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -7734,8 +7739,8 @@ Item {
                   onClicked: root.setGenOpt("special", !root.genOpts.special)
                 }
                 Button {
-                  text: "Avoid ambiguous"
-                  tooltipText: "Exclude characters that are easy to confuse, such as l, 1, I, O and 0"
+                  text: Tr.text("Avoid ambiguous")
+                  tooltipText: Tr.text("Exclude characters that are easy to confuse, such as l, 1, I, O and 0")
                   selected: root.genOpts.ambiguous
                   accent: Color.accent
                   fontFamily: root.fontFamily
@@ -7752,7 +7757,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   width: parent.width - Style.space(170)
-                  text: "Minimum numbers"
+                  text: Tr.text("Minimum numbers")
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -7778,7 +7783,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   width: parent.width - Style.space(170)
-                  text: "Minimum special"
+                  text: Tr.text("Minimum special")
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -7810,7 +7815,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   width: parent.width - Style.space(170)
-                  text: "Number of words"
+                  text: Tr.text("Number of words")
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -7835,7 +7840,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.verticalCenter: parent.verticalCenter
                   width: parent.width - Style.space(170)
-                  text: "Word separator"
+                  text: Tr.text("Word separator")
                   color: root.fg
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.body
@@ -7853,7 +7858,7 @@ Item {
                 spacing: Style.space(6)
 
                 Button {
-                  text: "Capitalize"
+                  text: Tr.text("Capitalize")
                   selected: root.genOpts.capitalize
                   accent: Color.accent
                   fontFamily: root.fontFamily
@@ -7861,7 +7866,7 @@ Item {
                   onClicked: root.setGenOpt("capitalize", !root.genOpts.capitalize)
                 }
                 Button {
-                  text: "Include number"
+                  text: Tr.text("Include number")
                   selected: root.genOpts.includeNumber
                   accent: Color.accent
                   fontFamily: root.fontFamily
@@ -7902,7 +7907,7 @@ Item {
 
             Text {
               textFormat: Text.PlainText
-              text: "Set an unlock PIN"
+              text: Tr.text("Set an unlock PIN")
               color: root.fg
               font.family: root.fontFamily
               font.pixelSize: Style.font.title
@@ -7912,9 +7917,9 @@ Item {
             Text {
               textFormat: Text.PlainText
               width: parent.width
-              text: "Your master password is encrypted with a key derived from this PIN, and only the encrypted form is stored. "
-                + "Use " + Model.pinRecommendedLength() + " digits or more; " + Model.pinMinLength()
-                + " is the floor, and every extra digit multiplies an attacker's work by ten."
+              text: Tr.text("Your master password is encrypted with a key derived from this PIN, and only the encrypted form is stored. ")
+                + Tr.text("Use ") + Model.pinRecommendedLength() + Tr.text(" digits or more; ") + Model.pinMinLength()
+                + Tr.text(" is the floor, and every extra digit multiplies an attacker's work by ten.")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -7926,10 +7931,10 @@ Item {
             width: parent.width
             spacing: Style.space(8)
 
-            Text { textFormat: Text.PlainText; text: "MASTER PASSWORD"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+            Text { textFormat: Text.PlainText; text: Tr.text("MASTER PASSWORD"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
             TextField {
               width: parent.width
-              placeholderText: "Needed once, to encrypt the PIN..."
+              placeholderText: Tr.text("Needed once, to encrypt the PIN...")
               password: true
               text: root.pinSetupMaster
               onTextChanged: root.pinSetupMaster = text
@@ -7949,7 +7954,7 @@ Item {
             TextField {
               id: pinSetupPinField
               width: parent.width
-              placeholderText: Model.pinRecommendedLength() + " digits or more..."
+              placeholderText: Model.pinRecommendedLength() + Tr.text(" digits or more...")
               password: true
               text: root.pinSetupPin
               onTextChanged: root.pinSetupPin = text.replace(/[^0-9]/g, "")
@@ -7964,17 +7969,17 @@ Item {
               textFormat: Text.PlainText
               visible: root.pinSetupWeak
               width: parent.width
-              text: "󰀪  " + Model.pinWeakWarning(root.pinSetupPin)
+              text: "󰀪  " + root.pinWarning(root.pinSetupPin)
               color: root.urgent
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
               wrapMode: Text.WordWrap
             }
 
-            Text { textFormat: Text.PlainText; text: "CONFIRM PIN"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+            Text { textFormat: Text.PlainText; text: Tr.text("CONFIRM PIN"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
             TextField {
               width: parent.width
-              placeholderText: "Repeat the PIN..."
+              placeholderText: Tr.text("Repeat the PIN...")
               password: true
               text: root.pinSetupConfirm
               onTextChanged: root.pinSetupConfirm = text.replace(/[^0-9]/g, "")
@@ -7998,7 +8003,7 @@ Item {
               spacing: Style.space(8)
 
               Button {
-                text: root.pinBusy ? "Encrypting..." : "Save PIN"
+                text: root.pinBusy ? Tr.text("Encrypting...") : Tr.text("Save PIN")
                 iconText: root.pinBusy ? "󰑐" : "󰄬"
                 iconSpinning: root.pinBusy
                 selected: true
@@ -8009,7 +8014,7 @@ Item {
               }
 
               Button {
-                text: "Cancel"
+                text: Tr.text("Cancel")
                 iconText: "󰅖"
                 fontFamily: root.fontFamily
                 enabled: !root.pinBusy
@@ -8052,7 +8057,7 @@ Item {
 
             Text {
               textFormat: Text.PlainText
-              text: root.missingRequired.length > 0 ? "One more step" : "All set"
+              text: root.missingRequired.length > 0 ? Tr.text("One more step") : Tr.text("All set")
               color: root.fg
               font.family: root.fontFamily
               font.pixelSize: Style.font.title
@@ -8063,8 +8068,8 @@ Item {
               textFormat: Text.PlainText
               width: parent.width
               text: root.missingRequired.length > 0
-                ? "The plugin drives these tools rather than bundling them. Install the required ones below and the panel picks them up on its own -- no terminal work to come back from."
-                : "Every required tool is installed. Optional ones below unlock extra features."
+                ? Tr.text("The plugin drives these tools rather than bundling them. Install the required ones below and the panel picks them up on its own -- no terminal work to come back from.")
+                : Tr.text("Every required tool is installed. Optional ones below unlock extra features.")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -8109,7 +8114,7 @@ Item {
                     spacing: Style.space(6)
                     Text {
                       textFormat: Text.PlainText
-                      text: modelData.label
+                      text: Tr.text(modelData.label)
                       color: root.fg
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.body
@@ -8118,7 +8123,7 @@ Item {
                     Text {
                       textFormat: Text.PlainText
                       anchors.verticalCenter: parent.verticalCenter
-                      text: modelData.required ? "required" : "optional"
+                      text: modelData.required ? Tr.text("required") : Tr.text("optional")
                       color: root.dim
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
@@ -8128,7 +8133,7 @@ Item {
                   Text {
                     textFormat: Text.PlainText
                     width: parent.width
-                    text: modelData.purpose
+                    text: Tr.text(modelData.purpose)
                     color: root.dim
                     font.family: root.fontFamily
                     font.pixelSize: Style.font.caption
@@ -8139,7 +8144,7 @@ Item {
                     textFormat: Text.PlainText
                     visible: !!modelData.note
                     width: parent.width
-                    text: modelData.note
+                    text: Tr.text(modelData.note)
                     color: root.urgent
                     font.family: root.fontFamily
                     font.pixelSize: Style.font.caption
@@ -8154,7 +8159,7 @@ Item {
                     textFormat: Text.PlainText
                     visible: modelData.setup && modelData.installed && !modelData.ready
                     width: parent.width
-                    text: "Reader stack is installed, but no finger is enrolled yet."
+                    text: Tr.text("Reader stack is installed, but no finger is enrolled yet.")
                     color: root.urgent
                     font.family: root.fontFamily
                     font.pixelSize: Style.font.caption
@@ -8166,11 +8171,11 @@ Item {
                 Button {
                   anchors.verticalCenter: parent.verticalCenter
                   visible: modelData.setup ? !modelData.ready : !modelData.installed
-                  text: modelData.setup ? "Set up" : "Install"
+                  text: modelData.setup ? Tr.text("Set up") : Tr.text("Install")
                   iconText: modelData.setup ? "󰈷" : "󰐕"
                   tooltipText: modelData.setup
-                    ? "Configure fingerprint authentication for DMS"
-                    : "Install package: " + modelData.pkg
+                    ? Tr.text("Configure fingerprint authentication for DMS")
+                    : Tr.text("Install package: ") + modelData.pkg
                   fontFamily: root.fontFamily
                   fontSize: Style.font.caption
                   onClicked: root.installOne(modelData)
@@ -8179,12 +8184,12 @@ Item {
             }
           }
 
-          Row {
+          Flow {
             width: parent.width
             spacing: Style.space(8)
 
             Button {
-              text: "Re-check"
+              text: Tr.text("Re-check")
               iconText: "󰑐"
               fontFamily: root.fontFamily
               fontSize: Style.font.bodySmall
@@ -8196,18 +8201,18 @@ Item {
             // working rather than only the ones that block startup.
             Button {
               visible: root.installablePackages.length > 0
-              text: root.installablePackages.length > 1 ? "Install all missing" : "Install"
+              text: root.installablePackages.length > 1 ? Tr.text("Install all missing") : Tr.text("Install")
               iconText: "󰐕"
               selected: true
               accent: Color.accent
-              tooltipText: "Install package: " + root.installablePackages.join(" ")
+              tooltipText: Tr.text("Install package: ") + root.installablePackages.join(" ")
               fontFamily: root.fontFamily
               fontSize: Style.font.bodySmall
               onClicked: root.installMissing()
             }
 
             Button {
-              text: root.missingRequired.length > 0 ? "Continue anyway" : "Done"
+              text: root.missingRequired.length > 0 ? Tr.text("Continue anyway") : Tr.text("Done")
               iconText: "󰁍"
               fontFamily: root.fontFamily
               fontSize: Style.font.bodySmall
@@ -8252,7 +8257,7 @@ Item {
                 textFormat: Text.PlainText
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.settingsStickyEntry
-                  ? String(root.settingsStickyEntry.label || "").toUpperCase() : ""
+                  ? String(Tr.text(root.settingsStickyEntry.label || "")).toUpperCase() : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
               }
@@ -8278,7 +8283,7 @@ Item {
               }
 
               Button {
-                text: "Back (Esc)"
+                text: Tr.text("Back (Esc)")
                 iconText: "󰁍"
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
@@ -8383,7 +8388,7 @@ Item {
                     textFormat: Text.PlainText
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: String(modelData.label || "").toUpperCase()
+                    text: Tr.text(modelData.label || "").toUpperCase()
                     foreground: root.fg
                     fontFamily: root.fontFamily
                   }
@@ -8424,7 +8429,8 @@ Item {
                     Text {
                       textFormat: Text.PlainText
                       width: parent.width
-                      text: modelData.label
+                      text: Tr.text(modelData.label)
+                      wrapMode: Text.WordWrap
                       color: blocked ? root.dim : root.fg
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.body
@@ -8438,8 +8444,8 @@ Item {
                       // bindings are evaluated all the same, and undefined
                       // reaches a QString property as a warning per frame.
                       text: blocked
-                        ? "Needs fingerprint setup -- see Dependencies below."
-                        : (modelData.description || "")
+                        ? Tr.text("Needs fingerprint setup -- see Dependencies below.")
+                        : (Tr.text(modelData.description || ""))
                       color: root.dim
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
@@ -8482,7 +8488,7 @@ Item {
                       textFormat: Text.PlainText
                       anchors.verticalCenter: parent.verticalCenter
                       visible: modelData.type === "int" && !!modelData.unit
-                      text: modelData.unit || ""
+                      text: Tr.text(modelData.unit || "")
                       color: root.dim
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
@@ -8506,7 +8512,7 @@ Item {
                 Text {
                   textFormat: Text.PlainText
                   visible: modelData.type === "int" && root.settingValue(modelData) === 0 && !!modelData.zeroLabel
-                  text: (modelData.zeroLabel || "") + " -- this is disabled."
+                  text: (Tr.text(modelData.zeroLabel || "")) + Tr.text(" -- this is disabled.")
                   color: root.urgent
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -8538,7 +8544,7 @@ Item {
 
             PanelSectionHeader {
               textFormat: Text.PlainText
-              text: "MAINTENANCE"
+              text: Tr.text("MAINTENANCE")
               foreground: root.fg
               fontFamily: root.fontFamily
             }
@@ -8548,9 +8554,9 @@ Item {
               spacing: Style.space(8)
 
               Button {
-                text: "Dependencies"
+                text: Tr.text("Dependencies")
                 iconText: "󰏗"
-                tooltipText: "Check the tools this plugin needs"
+                tooltipText: Tr.text("Check the tools this plugin needs")
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
                 onClicked: {
@@ -8562,9 +8568,9 @@ Item {
 
               Button {
                 visible: root.fingerprintStored
-                text: "Forget Fingerprint"
+                text: Tr.text("Forget Fingerprint")
                 iconText: "󰈷"
-                tooltipText: "Remove the stored master password from the OS keyring"
+                tooltipText: Tr.text("Remove the stored master password from the OS keyring")
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
                 onClicked: root.forgetFingerprintUnlock()
@@ -8580,7 +8586,7 @@ Item {
 
             PanelSectionHeader {
               textFormat: Text.PlainText
-              text: "DANGER ZONE"
+              text: Tr.text("DANGER ZONE")
               foreground: Color.urgent
               fontFamily: root.fontFamily
             }
@@ -8595,9 +8601,9 @@ Item {
 
               Button {
                 visible: !root.pluginDataConfirmPending
-                text: "Remove Plugin Data"
+                text: Tr.text("Remove Plugin Data")
                 iconText: "󰩹"
-                tooltipText: "Clear the keyring entries, learned suggestions and exported public keys this plugin stored"
+                tooltipText: Tr.text("Clear the keyring entries, learned suggestions and exported public keys this plugin stored")
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
                 enabled: !root.pluginDataBusy
@@ -8606,7 +8612,7 @@ Item {
 
               Button {
                 visible: root.pluginDataConfirmPending
-                text: "Remove Everything"
+                text: Tr.text("Remove Everything")
                 iconText: "󰩹"
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
@@ -8616,7 +8622,7 @@ Item {
 
               Button {
                 visible: root.pluginDataConfirmPending
-                text: "Cancel"
+                text: Tr.text("Cancel")
                 fontFamily: root.fontFamily
                 fontSize: Style.font.bodySmall
                 onClicked: root.cancelPluginDataRemoval()
@@ -8630,8 +8636,8 @@ Item {
               textFormat: Text.PlainText
               width: parent.width
               visible: root.pluginDataConfirmPending
-              text: "This clears the stored master password, learned suggestions and exported public keys. "
-                + "Settings and your vault are untouched. It cannot be undone."
+              text: Tr.text("This clears the stored master password, learned suggestions and exported public keys. ")
+                + Tr.text("Settings and your vault are untouched. It cannot be undone.")
               color: root.urgent
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -8652,7 +8658,7 @@ Item {
             Text {
               textFormat: Text.PlainText
               width: parent.width
-              text: "Saved in DankMaterialShell plugin settings."
+              text: Tr.text("Saved in DankMaterialShell plugin settings.")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -8679,7 +8685,7 @@ Item {
           Text {
             textFormat: Text.PlainText
             width: parent.width
-            text: "󰌆  An SSH key is needed"
+            text: Tr.text("󰌆  An SSH key is needed")
             color: Color.accent
             font.family: root.fontFamily
             font.pixelSize: Style.font.body
@@ -8689,20 +8695,20 @@ Item {
             text: !root.sshUnlockRequest
               ? ""
               : (root.sshUnlockRequest.keyName !== ""
-                  ? root.sshUnlockRequest.keyName + " · requested by "
+                  ? root.sshUnlockRequest.keyName + Tr.text(" · requested by ")
                     + root.sshUnlockRequest.processName
                   // An identity listing names no key: the client is asking
                   // which keys exist, and until the vault is open there is no
                   // answer to give.
                   : root.sshUnlockRequest.processName
-                    + " is asking which SSH keys are available")
+                    + Tr.text(" is asking which SSH keys are available"))
             color: root.fg
           }
 
           SshCaption {
             text: root.sshAgentLoadActive
-              ? Model.sshAgentLoadingNote()
-              : "Unlocking loads your keys. You will still be asked before anything is signed."
+              ? Tr.text(Model.sshAgentLoadingNote())
+              : Tr.text("Unlocking loads your keys. You will still be asked before anything is signed.")
           }
 
           Row {
@@ -8711,7 +8717,7 @@ Item {
 
             Button {
               visible: !root.sshAgentLoadActive
-              text: "Not now (Esc)"
+              text: Tr.text("Not now (Esc)")
               iconText: "󰅘"
               fontFamily: root.fontFamily
               fontSize: Style.font.caption
@@ -8721,7 +8727,7 @@ Item {
             Text {
               textFormat: Text.PlainText
               anchors.verticalCenter: parent.verticalCenter
-              text: root.sshPromptRemainingSec + "s left"
+              text: root.sshPromptRemainingSec + Tr.text("s left")
               color: root.sshPromptRemainingSec <= 5 ? root.urgent : root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -8750,7 +8756,7 @@ Item {
             spacing: Style.space(8)
 
             Button {
-              text: "Email & Password"
+              text: Tr.text("Email & Password")
               iconText: "󰇮"
               selected: root.loginMethod === "email"
               fontFamily: root.fontFamily
@@ -8763,7 +8769,7 @@ Item {
             }
 
             Button {
-              text: "API Key"
+              text: Tr.text("API Key")
               iconText: "󰌋"
               selected: root.loginMethod === "apikey"
               fontFamily: root.fontFamily
@@ -8783,7 +8789,7 @@ Item {
 
             Text {
               textFormat: Text.PlainText
-              text: "SERVER REGION"
+              text: Tr.text("SERVER REGION")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -8811,7 +8817,7 @@ Item {
               }
 
               Button {
-                text: "Custom"
+                text: Tr.text("Custom")
                 selected: root.loginServerRegion === "custom"
                 fontFamily: root.fontFamily
                 fontSize: Style.font.caption
@@ -8844,7 +8850,7 @@ Item {
               visible: root.loginCredentialsStage
               width: parent.width
               spacing: Style.space(3)
-              Text { textFormat: Text.PlainText; text: "EMAIL ADDRESS"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("EMAIL ADDRESS"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
               TextField {
                 id: emailField
                 width: parent.width
@@ -8864,14 +8870,14 @@ Item {
               visible: root.loginCredentialsStage
               width: parent.width
               spacing: Style.space(3)
-              Text { textFormat: Text.PlainText; text: "MASTER PASSWORD"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("MASTER PASSWORD"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
               Row {
                 width: parent.width
                 spacing: Style.space(6)
                 TextField {
                   id: loginPassField
                   width: parent.width - eyeBtnLogin.width - Style.space(6)
-                  placeholderText: "Master password..."
+                  placeholderText: Tr.text("Master password...")
                   password: !eyeBtnLogin.revealed
                   text: root.loginPassword
                   onTextChanged: root.loginPassword = text
@@ -8891,7 +8897,7 @@ Item {
                   id: eyeBtnLogin
                   property bool revealed: false
                   iconText: revealed ? "󰈉" : "󰈈"
-                  tooltipText: revealed ? "Hide password" : "Show password"
+                  tooltipText: revealed ? Tr.text("Hide password") : Tr.text("Show password")
                   fontFamily: root.fontFamily
                   onClicked: revealed = !revealed
                 }
@@ -8909,7 +8915,7 @@ Item {
 
               Text {
                 textFormat: Text.PlainText
-                text: "NEW DEVICE VERIFICATION"
+                text: Tr.text("NEW DEVICE VERIFICATION")
                 color: Color.accent
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -8919,8 +8925,8 @@ Item {
               Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: "Bitwarden has not seen this machine before and emailed a code to "
-                  + "your login address. This is asked once per device."
+                text: Tr.text("Bitwarden has not seen this machine before and emailed a code to ")
+                  + Tr.text("your login address. This is asked once per device.")
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -8930,7 +8936,7 @@ Item {
               TextField {
                 id: deviceCodeField
                 width: parent.width
-                placeholderText: "Code from your email..."
+                placeholderText: Tr.text("Code from your email...")
                 text: root.loginDeviceCode
                 onTextChanged: root.loginDeviceCode = text
                 onAccepted: root.submitDeviceVerification()
@@ -8938,7 +8944,7 @@ Item {
 
               Button {
                 width: parent.width
-                text: root.isLoading ? "Verifying device..." : "Verify Device & Unlock"
+                text: root.isLoading ? Tr.text("Verifying device...") : Tr.text("Verify Device & Unlock")
                 iconText: root.isLoading ? "󰑐" : "󰌋"
                 iconSpinning: root.isLoading
                 selected: true
@@ -8953,7 +8959,7 @@ Item {
                 spacing: Style.space(6)
 
                 Button {
-                  text: "Back to credentials"
+                  text: Tr.text("Back to credentials")
                   iconText: "󰁍"
                   fontFamily: root.fontFamily
                   fontSize: Style.font.caption
@@ -8968,7 +8974,7 @@ Item {
                 // Still here, because bw in a real terminal can answer
                 // anything this path cannot.
                 Button {
-                  text: "Use Terminal Instead"
+                  text: Tr.text("Use Terminal Instead")
                   iconText: "󰞷"
                   fontFamily: root.fontFamily
                   fontSize: Style.font.caption
@@ -8988,7 +8994,7 @@ Item {
 
               Text {
                 textFormat: Text.PlainText
-                text: "TWO-STEP METHOD"
+                text: Tr.text("TWO-STEP METHOD")
                 color: Color.accent
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -8998,8 +9004,8 @@ Item {
               Text {
                 textFormat: Text.PlainText
                 width: parent.width
-                text: "Which one do you use for this account? Bitwarden is asked for a code "
-                  + "only after you choose, and the choice is remembered for next time."
+                text: Tr.text("Which one do you use for this account? Bitwarden is asked for a code ")
+                  + Tr.text("only after you choose, and the choice is remembered for next time.")
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -9015,7 +9021,7 @@ Item {
 
                   Button {
                     width: parent.width
-                    text: modelData.label
+                    text: Tr.text(modelData.label)
                     iconText: "󰌋"
                     fontFamily: root.fontFamily
                     enabled: !root.isLoading
@@ -9025,7 +9031,7 @@ Item {
                   Text {
                     textFormat: Text.PlainText
                     width: parent.width
-                    text: modelData.hint
+                    text: Tr.text(modelData.hint)
                     color: root.dim
                     font.family: root.fontFamily
                     font.pixelSize: Style.font.caption
@@ -9035,7 +9041,7 @@ Item {
               }
 
               Button {
-                text: "Back to credentials"
+                text: Tr.text("Back to credentials")
                 iconText: "󰁍"
                 fontFamily: root.fontFamily
                 fontSize: Style.font.caption
@@ -9057,8 +9063,8 @@ Item {
               Text {
                 textFormat: Text.PlainText
                 text: root.login2faMethodLabel
-                  ? "TWO-STEP CODE (" + root.login2faMethodLabel.toUpperCase() + ")"
-                  : "TWO-STEP VERIFICATION CODE (2FA)"
+                  ? Tr.text("TWO-STEP CODE (") + root.login2faMethodLabel.toUpperCase() + ")"
+                  : Tr.text("TWO-STEP VERIFICATION CODE (2FA)")
                 color: Color.accent
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -9068,7 +9074,7 @@ Item {
               TextField {
                 id: code2faField
                 width: parent.width
-                placeholderText: "6-digit Authenticator / Email verification code..."
+                placeholderText: Tr.text("6-digit Authenticator / Email verification code...")
                 text: root.login2faCode
                 onTextChanged: {
                   root.login2faCode = text
@@ -9082,7 +9088,7 @@ Item {
                 spacing: Style.space(6)
 
                 Button {
-                  text: "Back to credentials"
+                  text: Tr.text("Back to credentials")
                   iconText: "󰁍"
                   fontFamily: root.fontFamily
                   fontSize: Style.font.caption
@@ -9098,7 +9104,7 @@ Item {
                 // way back to the question once an account has answered it, so
                 // it stays available even when nothing has gone wrong yet.
                 Button {
-                  text: "Change method"
+                  text: Tr.text("Change method")
                   iconText: "󰑐"
                   fontFamily: root.fontFamily
                   fontSize: Style.font.caption
@@ -9136,7 +9142,7 @@ Item {
             Column {
               width: parent.width
               spacing: Style.space(3)
-              Text { textFormat: Text.PlainText; text: "CLIENT ID"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("CLIENT ID"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
               TextField {
                 id: apiClientIdField
                 width: parent.width
@@ -9149,11 +9155,11 @@ Item {
             Column {
               width: parent.width
               spacing: Style.space(3)
-              Text { textFormat: Text.PlainText; text: "CLIENT SECRET"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("CLIENT SECRET"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
               TextField {
                 id: apiClientSecretField
                 width: parent.width
-                placeholderText: "Client secret string..."
+                placeholderText: Tr.text("Client secret string...")
                 password: true
                 text: root.loginClientSecret
                 onTextChanged: root.loginClientSecret = text
@@ -9163,11 +9169,11 @@ Item {
             Column {
               width: parent.width
               spacing: Style.space(3)
-              Text { textFormat: Text.PlainText; text: "MASTER PASSWORD"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+              Text { textFormat: Text.PlainText; text: Tr.text("MASTER PASSWORD"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
               TextField {
                 id: apiMasterField
                 width: parent.width
-                placeholderText: "Master password to unlock vault..."
+                placeholderText: Tr.text("Master password to unlock vault...")
                 password: true
                 text: root.loginPassword
                 onTextChanged: root.loginPassword = text
@@ -9177,7 +9183,7 @@ Item {
 
             Button {
               width: parent.width
-              text: root.logoutCleanupFailed ? "Retry Logout Cleanup" : (root.logoutPending ? "Finishing logout..." : (root.isLoading ? "Logging in..." : "Log In with API Key"))
+              text: root.logoutCleanupFailed ? Tr.text("Retry Logout Cleanup") : (root.logoutPending ? Tr.text("Finishing logout...") : (root.isLoading ? Tr.text("Logging in...") : Tr.text("Log In with API Key")))
               iconText: root.logoutCleanupFailed ? "󰑐" : ((root.logoutPending || root.isLoading) ? "󰑐" : "󰌋")
               iconSpinning: !root.logoutCleanupFailed && (root.logoutPending || root.isLoading)
               selected: true
@@ -9197,8 +9203,8 @@ Item {
             Text {
               textFormat: Text.PlainText
               text: root.loginDeviceVerification
-                ? "Device verification needs a terminal:"
-                : "Prefer interactive TTY login?"
+                ? Tr.text("Device verification needs a terminal:")
+                : Tr.text("Prefer interactive TTY login?")
               color: root.loginDeviceVerification ? Color.accent : root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -9206,7 +9212,7 @@ Item {
               anchors.verticalCenter: parent.verticalCenter
             }
             Button {
-              text: root.loginDeviceVerification ? "Finish in Terminal" : "Launch Terminal"
+              text: root.loginDeviceVerification ? Tr.text("Finish in Terminal") : Tr.text("Launch Terminal")
               iconText: "󰞷"
               selected: root.loginDeviceVerification
               accent: Color.accent
@@ -9255,7 +9261,7 @@ Item {
             Text {
               textFormat: Text.PlainText
               anchors.horizontalCenter: parent.horizontalCenter
-              text: root.fingerprintReady ? "Unlock Vault" : "Enter Master Password"
+              text: root.fingerprintReady ? Tr.text("Unlock Vault") : Tr.text("Enter Master Password")
               color: root.fg
               font.family: root.fontFamily
               font.pixelSize: Style.font.title
@@ -9292,7 +9298,7 @@ Item {
             visible: root.fingerprintUnlock && root.fingerprintAvailable && !root.fingerprintStored
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: "󰈷  Unlock once with your master password to enable fingerprint unlock."
+            text: Tr.text("󰈷  Unlock once with your master password to enable fingerprint unlock.")
             color: root.dim
             font.family: root.fontFamily
             font.pixelSize: Style.font.caption
@@ -9314,7 +9320,7 @@ Item {
               TextField {
                 id: pinField
                 width: parent.width - pinUnlockBtn.width - Style.space(8)
-                placeholderText: "Enter your PIN..."
+                placeholderText: Tr.text("Enter your PIN...")
                 password: true
                 text: root.pinEntry
                 onTextChanged: root.pinEntry = text.replace(/[^0-9]/g, "")
@@ -9324,7 +9330,7 @@ Item {
 
               Button {
                 id: pinUnlockBtn
-                text: root.pinBusy ? "Checking..." : "Unlock"
+                text: root.pinBusy ? Tr.text("Checking...") : Tr.text("Unlock")
                 iconText: root.pinBusy ? "󰑐" : "󰌿"
                 iconSpinning: root.pinBusy
                 selected: true
@@ -9348,7 +9354,7 @@ Item {
 
             Text {
               textFormat: Text.PlainText
-              text: "or use your master password below"
+              text: Tr.text("or use your master password below")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -9376,7 +9382,7 @@ Item {
             Button {
               visible: root.fingerprintReady
               width: parent.width
-              text: root.fingerprintScanning ? "Waiting for fingerprint..." : "Unlock with Fingerprint"
+              text: root.fingerprintScanning ? Tr.text("Waiting for fingerprint...") : Tr.text("Unlock with Fingerprint")
               iconText: "󰈷"
               selected: true
               accent: Color.accent
@@ -9392,7 +9398,7 @@ Item {
               TextField {
                 id: passField
                 width: parent.width - eyeBtnUnlock.width - Style.space(8)
-                placeholderText: "Master password..."
+                placeholderText: Tr.text("Master password...")
                 password: !eyeBtnUnlock.revealed
                 text: root.masterPassword
                 onTextChanged: root.masterPassword = text
@@ -9407,7 +9413,7 @@ Item {
                 id: eyeBtnUnlock
                 property bool revealed: false
                 iconText: revealed ? "󰈉" : "󰈈"
-                tooltipText: revealed ? "Hide password" : "Show password"
+                tooltipText: revealed ? Tr.text("Hide password") : Tr.text("Show password")
                 fontFamily: root.fontFamily
                 onClicked: revealed = !revealed
               }
@@ -9415,7 +9421,7 @@ Item {
 
             Button {
               width: parent.width
-              text: root.isUnlocking ? "Unlocking..." : "Unlock Vault"
+              text: root.isUnlocking ? Tr.text("Unlocking...") : Tr.text("Unlock Vault")
               iconText: root.isUnlocking ? "󰑐" : "󰌋"
               iconSpinning: root.isUnlocking
               selected: true
@@ -9431,7 +9437,7 @@ Item {
             spacing: Style.space(8)
 
             Button {
-              text: "Switch / Log Out"
+              text: Tr.text("Switch / Log Out")
               iconText: "󰍃"
               fontFamily: root.fontFamily
               fontSize: Style.font.caption
@@ -9440,9 +9446,9 @@ Item {
 
             Button {
               visible: root.fingerprintStored
-              text: "Forget Fingerprint"
+              text: Tr.text("Forget Fingerprint")
               iconText: "󰈷"
-              tooltipText: "Remove the stored master password from the OS keyring"
+              tooltipText: Tr.text("Remove the stored master password from the OS keyring")
               fontFamily: root.fontFamily
               fontSize: Style.font.caption
               onClicked: root.forgetFingerprintUnlock()
@@ -9466,7 +9472,7 @@ Item {
             TextField {
               id: searchField
               width: parent.width - (root.searchQuery ? clearSearchBtn.width + Style.space(6) : 0)
-              placeholderText: "Search items, usernames, URLs, public keys, fingerprints..."
+              placeholderText: Tr.text("Search items, usernames, URLs, public keys, fingerprints...")
               text: root.searchQuery
               onTextChanged: {
                 root.searchQuery = text
@@ -9508,7 +9514,7 @@ Item {
               id: clearSearchBtn
               visible: root.searchQuery !== ""
               iconText: "󰅖"
-              tooltipText: "Clear search"
+              tooltipText: Tr.text("Clear search")
               fontFamily: root.fontFamily
               onClicked: searchField.text = ""
             }
@@ -9546,7 +9552,7 @@ Item {
                 textFormat: Text.PlainText
                 Layout.alignment: Qt.AlignVCenter
                 Layout.fillWidth: true
-                text: "Suggested for " + (root.detectedContext ? root.detectedContext.displayName : "active window")
+                text: Tr.text("Suggested for ") + (root.detectedContext ? root.detectedContext.displayName : Tr.text("active window"))
                 color: Color.accent
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -9557,7 +9563,7 @@ Item {
               PanelActionButton {
                 Layout.alignment: Qt.AlignVCenter
                 iconText: "󰅖"
-                tooltipText: "Dismiss suggestion"
+                tooltipText: Tr.text("Dismiss suggestion")
                 fontFamily: root.fontFamily
                 size: Style.space(18)
                 fontSize: Style.font.caption
@@ -9697,7 +9703,7 @@ Item {
                       Text {
                         textFormat: Text.PlainText
                         visible: Boolean(itemData.isSuggested)
-                        text: root.learnedIds[itemData.id] ? "󰐾 Suggested" : "󰌠 Suggested"
+                        text: root.learnedIds[itemData.id] ? Tr.text("󰐾 Suggested") : Tr.text("󰌠 Suggested")
                         color: Color.accent
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -9717,7 +9723,7 @@ Item {
                       Text {
                         textFormat: Text.PlainText
                         id: rowSubtitle
-                        text: itemData.subtitle || Model.itemTypeLabel(itemData.typeCode)
+                        text: itemData.subtitle || Tr.text(Model.itemTypeLabel(itemData.typeCode))
                         color: root.dim
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -9756,7 +9762,7 @@ Item {
                     PanelActionButton {
                       visible: itemData.typeCode !== 5 && itemData.hasPassword
                       iconText: "󰌆"
-                      tooltipText: "Copy password (Enter / y)"
+                      tooltipText: Tr.text("Copy password (Enter / y)")
                       fontFamily: root.fontFamily
                       onClicked: root.handleSmartEnter(itemData)
                     }
@@ -9764,7 +9770,7 @@ Item {
                     PanelActionButton {
                       visible: itemData.typeCode !== 5 && itemData.username !== ""
                       iconText: ""
-                      tooltipText: "Copy username (u)"
+                      tooltipText: Tr.text("Copy username (u)")
                       fontFamily: root.fontFamily
                       onClicked: root.copyUsername(itemData)
                     }
@@ -9772,14 +9778,14 @@ Item {
                     PanelActionButton {
                       visible: itemData.typeCode !== 5 && itemData.hasTotp
                       iconText: "󰥔"
-                      tooltipText: "Copy TOTP code (m)"
+                      tooltipText: Tr.text("Copy TOTP code (m)")
                       fontFamily: root.fontFamily
                       onClicked: root.copyTotpCode(itemData)
                     }
 
                     PanelActionButton {
                       iconText: "󰏫"
-                      tooltipText: itemData.typeCode === 5 ? "View public key" : "View / Edit item (e)"
+                      tooltipText: itemData.typeCode === 5 ? Tr.text("View public key") : Tr.text("View / Edit item (e)")
                       fontFamily: root.fontFamily
                       onClicked: root.openDetail(itemData)
                     }
@@ -9787,7 +9793,7 @@ Item {
                     PanelActionButton {
                       visible: itemData.typeCode !== 5 && itemData.uris && itemData.uris.length > 0
                       iconText: "󰖟"
-                      tooltipText: "Open URL (w)"
+                      tooltipText: Tr.text("Open URL (w)")
                       fontFamily: root.fontFamily
                       onClicked: root.openUrl(itemData.uris[0])
                     }
@@ -9838,7 +9844,7 @@ Item {
                   textFormat: Text.PlainText
                   anchors.horizontalCenter: parent.horizontalCenter
                   text: root.isLoading && root.items.length === 0
-                    ? "Loading items..."
+                    ? Tr.text("Loading items...")
                     : root.emptyListMessage()
                   color: root.dim
                   font.family: root.fontFamily
@@ -9890,9 +9896,9 @@ Item {
               Text {
                 textFormat: Text.PlainText
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.openFilterGroup === "folders" ? "FOLDERS"
-                    : root.openFilterGroup === "organizations" ? "ORGANIZATIONS"
-                    : "TYPES"
+                text: root.openFilterGroup === "folders" ? Tr.text("FOLDERS")
+                    : root.openFilterGroup === "organizations" ? Tr.text("ORGANIZATIONS")
+                    : Tr.text("TYPES")
                 color: Color.accent
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -9905,7 +9911,7 @@ Item {
                 textFormat: Text.PlainText
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.currentFilterOptions.length > root.currentFilterVisibleRows
-                text: root.currentFilterOptions.length + " total"
+                text: root.currentFilterOptions.length + Tr.text(" total")
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -10042,7 +10048,7 @@ Item {
               id: folderFilterButton
               group: "folders"
               glyph: "󰉋"
-              name: "Folders"
+              name: Tr.text("Folders")
               value: root.folderFilterLabel()
               shortcut: "f"
             }
@@ -10051,7 +10057,7 @@ Item {
               id: organizationFilterButton
               group: "organizations"
               glyph: "󰦑"
-              name: "Organizations"
+              name: Tr.text("Organizations")
               value: root.organizationFilterLabel()
               shortcut: "o"
             }
@@ -10060,7 +10066,7 @@ Item {
               id: typeFilterButton
               group: "types"
               glyph: "󰀻"
-              name: "Types"
+              name: Tr.text("Types")
               value: root.typeFilterLabel()
               shortcut: "t"
             }
@@ -10096,7 +10102,7 @@ Item {
             Button {
               // "Back to list" spelled out cost more width than the row could
               // spare, and the Sends screen already says just "Back (Esc)".
-              text: "Back (Esc)"
+              text: Tr.text("Back (Esc)")
               iconText: "󰁍"
               fontFamily: root.fontFamily
               fontSize: Style.font.bodySmall
@@ -10107,13 +10113,13 @@ Item {
               visible: Boolean(root.detectedContext && root.detectedContext.displayName && root.detailItem && root.detailItem.typeCode !== 5)
               readonly property bool pinned: Boolean(root.detailItem
                 && Model.isAssociated(root.associations, root.detectedContext, root.detailItem.id))
-              text: pinned ? "Suggested here" : "Suggest here"
+              text: pinned ? Tr.text("Suggested here") : Tr.text("Suggest here")
               iconText: pinned ? "󰐾" : "󰐽"
               selected: pinned
               accent: Color.accent
               // The window title is no more trustworthy than a vault value,
               // and the kit renders tooltips with an auto-detecting Text.
-              tooltipText: Model.plainLabel((pinned ? "Stop suggesting this for " : "Always suggest this for ")
+              tooltipText: Model.plainLabel((pinned ? Tr.text("Stop suggesting this for ") : Tr.text("Always suggest this for "))
                 + (root.detectedContext ? root.detectedContext.displayName : ""))
               fontFamily: root.fontFamily
               fontSize: Style.font.bodySmall
@@ -10122,7 +10128,7 @@ Item {
 
             Button {
               visible: Boolean(root.detailItem && root.detailItem.typeCode !== 5)
-              text: "Edit"
+              text: Tr.text("Edit")
               iconText: "󰏫"
               fontFamily: root.fontFamily
               fontSize: Style.font.bodySmall
@@ -10131,7 +10137,7 @@ Item {
 
             Button {
               visible: Boolean(root.detailItem && root.detailItem.typeCode !== 5)
-              text: "Delete"
+              text: Tr.text("Delete")
               iconText: "󰆴"
               accent: Color.urgent
               fontFamily: root.fontFamily
@@ -10155,7 +10161,7 @@ Item {
 
               Text {
                 textFormat: Text.PlainText
-                text: "Permanently delete this item?"
+                text: Tr.text("Permanently delete this item?")
                 color: root.fg
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -10164,7 +10170,7 @@ Item {
               }
 
               Button {
-                text: "Confirm Delete"
+                text: Tr.text("Confirm Delete")
                 iconText: "󰆴"
                 selected: true
                 accent: Color.urgent
@@ -10174,7 +10180,7 @@ Item {
               }
 
               Button {
-                text: "Cancel"
+                text: Tr.text("Cancel")
                 fontFamily: root.fontFamily
                 fontSize: Style.font.caption
                 onClicked: root.showDeleteConfirm = false
@@ -10227,7 +10233,7 @@ Item {
 
                     Text {
                       textFormat: Text.PlainText
-                      text: root.detailItem ? root.detailItem.name : "Loading..."
+                      text: root.detailItem ? root.detailItem.name : Tr.text("Loading...")
                       color: root.fg
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.title
@@ -10249,7 +10255,7 @@ Item {
                     spacing: Style.space(6)
                     Text {
                       textFormat: Text.PlainText
-                      text: root.detailItem ? Model.itemTypeLabel(root.detailItem.typeCode) : ""
+                      text: root.detailItem ? Tr.text(Model.itemTypeLabel(root.detailItem.typeCode)) : ""
                       color: root.dim
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
@@ -10257,7 +10263,7 @@ Item {
                     Text {
                       textFormat: Text.PlainText
                       visible: Boolean(root.detailItem && root.detailItem.organizationId)
-                      text: "• Shared Organization"
+                      text: Tr.text("• Shared Organization")
                       color: Color.accent
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
@@ -10281,7 +10287,7 @@ Item {
                 visible: Boolean(root.detailItem && root.detailItem.typeCode === 5)
                 width: parent.width
                 spacing: Style.space(4)
-                PanelSectionHeader { text: "PUBLIC KEY" }
+                PanelSectionHeader { text: Tr.text("PUBLIC KEY") }
                 BorderSurface {
                   width: parent.width
                   implicitHeight: Math.max(Style.space(54), sshPublicKeyText.implicitHeight + Style.space(20))
@@ -10293,7 +10299,7 @@ Item {
                     id: sshPublicKeyText
                     anchors.fill: parent
                     anchors.margins: Style.space(10)
-                    text: root.detailItem ? (root.detailItem.publicKey || "No public key") : ""
+                    text: root.detailItem ? (root.detailItem.publicKey || Tr.text("No public key")) : ""
                     color: root.fg
                     font.family: root.fontFamily
                     font.pixelSize: Style.font.caption
@@ -10303,7 +10309,7 @@ Item {
                 Text {
                   textFormat: Text.PlainText
                   visible: Boolean(root.detailItem && root.detailItem.fingerprint)
-                  text: "Fingerprint: " + (root.detailItem ? root.detailItem.fingerprint : "")
+                  text: Tr.text("Fingerprint: ") + (root.detailItem ? root.detailItem.fingerprint : "")
                   color: root.dim
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.caption
@@ -10314,14 +10320,14 @@ Item {
               // FIELD: Username
               DetailField {
                 visible: root.detailIsLoginLike && Boolean(root.detailItem) && root.detailItem.username !== ""
-                label: "Username / Email"
-                copyLabel: "Username"
+                label: Tr.text("Username / Email")
+                copyLabel: Tr.text("Username")
                 shortcutHint: "u"
                 copyIcon: ""
                 value: root.detailItem ? root.detailItem.username : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailItem ? root.detailItem.username : "", "Username")
+                onCopyRequested: root.copyToClipboard(root.detailItem ? root.detailItem.username : "", Tr.text("Username"))
               }
 
               // FIELD: Password
@@ -10330,7 +10336,7 @@ Item {
                 width: parent.width
                 spacing: Style.space(4)
 
-                PanelSectionHeader { text: "PASSWORD" }
+                PanelSectionHeader { text: Tr.text("PASSWORD") }
 
                 BorderSurface {
                   width: parent.width
@@ -10363,16 +10369,16 @@ Item {
 
                       PanelActionButton {
                         iconText: root.isFieldRevealed("password") ? "󰈉" : "󰈈"
-                        tooltipText: root.isFieldRevealed("password") ? "Hide password (v)" : "Reveal password (v)"
+                        tooltipText: root.isFieldRevealed("password") ? Tr.text("Hide password (v)") : Tr.text("Reveal password (v)")
                         fontFamily: root.fontFamily
                         onClicked: root.toggleFieldReveal("password")
                       }
 
                       PanelActionButton {
                         iconText: "󰌆"
-                        tooltipText: "Copy password (y / Enter)"
+                        tooltipText: Tr.text("Copy password (y / Enter)")
                         fontFamily: root.fontFamily
-                        onClicked: root.copyToClipboard(root.detailPassword, "Password")
+                        onClicked: root.copyToClipboard(root.detailPassword, Tr.text("Password"))
                       }
                     }
                   }
@@ -10387,7 +10393,7 @@ Item {
 
                 RowLayout {
                   width: parent.width
-                  PanelSectionHeader { text: "VERIFICATION CODE (TOTP)" }
+                  PanelSectionHeader { text: Tr.text("VERIFICATION CODE (TOTP)") }
                   Item { Layout.fillWidth: true }
                   Text {
                     textFormat: Text.PlainText
@@ -10424,7 +10430,7 @@ Item {
                     Text {
                       textFormat: Text.PlainText
                       anchors.verticalCenter: parent.verticalCenter
-                      text: root.liveTotp ? (root.liveTotp.length === 6 ? root.liveTotp.slice(0, 3) + " " + root.liveTotp.slice(3) : root.liveTotp) : "Loading..."
+                      text: root.liveTotp ? (root.liveTotp.length === 6 ? root.liveTotp.slice(0, 3) + " " + root.liveTotp.slice(3) : root.liveTotp) : Tr.text("Loading...")
                       color: Color.accent
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.title
@@ -10437,10 +10443,10 @@ Item {
                       id: copyTotpBtn
                       anchors.verticalCenter: parent.verticalCenter
                       iconText: "󰥔"
-                      tooltipText: "Copy TOTP code (m)"
+                      tooltipText: Tr.text("Copy TOTP code (m)")
                       fontFamily: root.fontFamily
                       enabled: root.liveTotp !== ""
-                      onClicked: root.copyToClipboard(root.liveTotp, "TOTP code")
+                      onClicked: root.copyToClipboard(root.liveTotp, Tr.text("TOTP code"))
                     }
                   }
                 }
@@ -10452,7 +10458,7 @@ Item {
                 width: parent.width
                 spacing: Style.space(4)
 
-                PanelSectionHeader { text: "WEBSITE" }
+                PanelSectionHeader { text: Tr.text("WEBSITE") }
 
                 Repeater {
                   model: root.detailItem ? root.detailItem.uris : []
@@ -10483,7 +10489,7 @@ Item {
                         id: openUriBtn
                         anchors.verticalCenter: parent.verticalCenter
                         iconText: "󰖟"
-                        tooltipText: "Open in browser (w)"
+                        tooltipText: Tr.text("Open in browser (w)")
                         fontFamily: root.fontFamily
                         onClicked: root.openUrl(modelData)
                       }
@@ -10512,13 +10518,13 @@ Item {
                 RowLayout {
                   width: parent.width
                   spacing: Style.space(6)
-                  PanelSectionHeader { text: "ATTACHMENTS" }
+                  PanelSectionHeader { text: Tr.text("ATTACHMENTS") }
                   Item { Layout.fillWidth: true }
                   PanelActionButton {
                     visible: Boolean(root.detailItem && root.detailItem.attachments
                       && root.detailItem.attachments.length > 1)
                     iconText: "󰇚"
-                    tooltipText: "Save all attachments (a)"
+                    tooltipText: Tr.text("Save all attachments (a)")
                     size: Style.space(20)
                     fontFamily: root.fontFamily
                     onClicked: root.saveAllAttachments()
@@ -10571,7 +10577,7 @@ Item {
                         textFormat: Text.PlainText
                         id: attachmentStatus
                         anchors.verticalCenter: parent.verticalCenter
-                        text: busy ? "Saving..." : queued ? "Queued" : modelData.sizeName
+                        text: busy ? Tr.text("Saving...") : queued ? Tr.text("Queued") : modelData.sizeName
                         color: root.dim
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -10586,7 +10592,7 @@ Item {
                           visible: savedPath === ""
                           enabled: !busy && !queued
                           iconText: "󰇚"
-                          tooltipText: "Save to your download folder"
+                          tooltipText: Tr.text("Save to your download folder")
                           fontFamily: root.fontFamily
                           onClicked: root.queueAttachment(modelData)
                         }
@@ -10594,7 +10600,7 @@ Item {
                         PanelActionButton {
                           visible: savedPath !== ""
                           iconText: "󰏌"
-                          tooltipText: "Open the saved file"
+                          tooltipText: Tr.text("Open the saved file")
                           fontFamily: root.fontFamily
                           onClicked: root.openSavedAttachment(modelData.id)
                         }
@@ -10604,7 +10610,7 @@ Item {
                           iconText: "󰝰"
                           // The path is ours -- a download directory plus a
                           // sanitised name -- but it is still drawn as text.
-                          tooltipText: Model.plainLabel("Show in " + Model.parentDirectory(savedPath))
+                          tooltipText: Model.plainLabel(Tr.text("Show in ") + Model.parentDirectory(savedPath))
                           fontFamily: root.fontFamily
                           onClicked: root.revealSavedAttachment(modelData.id)
                         }
@@ -10622,14 +10628,14 @@ Item {
 
                 RowLayout {
                   width: parent.width
-                  PanelSectionHeader { text: "NOTES" }
+                  PanelSectionHeader { text: Tr.text("NOTES") }
                   Item { Layout.fillWidth: true }
                   PanelActionButton {
                     iconText: "󰈙"
-                    tooltipText: "Copy notes"
+                    tooltipText: Tr.text("Copy notes")
                     size: Style.space(20)
                     fontFamily: root.fontFamily
-                    onClicked: if (root.detailItem) root.copyToClipboard(root.detailItem.notes, "Notes")
+                    onClicked: if (root.detailItem) root.copyToClipboard(root.detailItem.notes, Tr.text("Notes"))
                   }
                 }
 
@@ -10663,26 +10669,26 @@ Item {
               // card in your hand.
               DetailField {
                 visible: root.detailIsCard
-                label: "Cardholder Name"
+                label: Tr.text("Cardholder Name")
                 value: root.detailCard ? root.detailCard.cardholderName : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailCard ? root.detailCard.cardholderName : "", "Cardholder name")
+                onCopyRequested: root.copyToClipboard(root.detailCard ? root.detailCard.cardholderName : "", Tr.text("Cardholder name"))
               }
 
               DetailField {
                 visible: root.detailIsCard
-                label: "Brand"
+                label: Tr.text("Brand")
                 value: root.detailCard ? root.detailCard.brand : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailCard ? root.detailCard.brand : "", "Brand")
+                onCopyRequested: root.copyToClipboard(root.detailCard ? root.detailCard.brand : "", Tr.text("Brand"))
               }
 
               DetailField {
                 visible: root.detailIsCard
-                label: "Card Number"
-                copyLabel: "Card number"
+                label: Tr.text("Card Number")
+                copyLabel: Tr.text("Card number")
                 shortcutHint: "n / Enter"
                 revealHint: "v"
                 sensitive: true
@@ -10691,22 +10697,22 @@ Item {
                 foreground: root.fg
                 fontFamily: root.fontFamily
                 onRevealToggled: root.toggleFieldReveal("cardNumber")
-                onCopyRequested: root.copyToClipboard(root.detailCard ? root.detailCard.number : "", "Card number")
+                onCopyRequested: root.copyToClipboard(root.detailCard ? root.detailCard.number : "", Tr.text("Card number"))
               }
 
               DetailField {
                 visible: root.detailIsCard
-                label: "Expires"
+                label: Tr.text("Expires")
                 value: root.detailCardExpiry
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailCardExpiry, "Expiry")
+                onCopyRequested: root.copyToClipboard(root.detailCardExpiry, Tr.text("Expiry"))
               }
 
               DetailField {
                 visible: root.detailIsCard
-                label: "Security Code"
-                copyLabel: "Security code"
+                label: Tr.text("Security Code")
+                copyLabel: Tr.text("Security code")
                 shortcutHint: "k"
                 sensitive: true
                 revealed: root.isFieldRevealed("cardCode")
@@ -10714,7 +10720,7 @@ Item {
                 foreground: root.fg
                 fontFamily: root.fontFamily
                 onRevealToggled: root.toggleFieldReveal("cardCode")
-                onCopyRequested: root.copyToClipboard(root.detailCard ? root.detailCard.code : "", "Security code")
+                onCopyRequested: root.copyToClipboard(root.detailCard ? root.detailCard.code : "", Tr.text("Security code"))
               }
 
               // -----------------------------------------------------------
@@ -10726,49 +10732,49 @@ Item {
               // is how the useful one for somebody ends up missing.
               DetailField {
                 visible: root.detailIsIdentity
-                label: "Name"
+                label: Tr.text("Name")
                 value: root.detailIdentityName
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailIdentityName, "Name")
+                onCopyRequested: root.copyToClipboard(root.detailIdentityName, Tr.text("Name"))
               }
 
               DetailField {
                 visible: root.detailIsIdentity
-                label: "Username"
+                label: Tr.text("Username")
                 shortcutHint: "u"
                 value: root.detailIdentity ? root.detailIdentity.username : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.username : "", "Username")
+                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.username : "", Tr.text("Username"))
               }
 
               DetailField {
                 visible: root.detailIsIdentity
-                label: "Company"
+                label: Tr.text("Company")
                 value: root.detailIdentity ? root.detailIdentity.company : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.company : "", "Company")
+                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.company : "", Tr.text("Company"))
               }
 
               DetailField {
                 visible: root.detailIsIdentity
-                label: "Email"
+                label: Tr.text("Email")
                 shortcutHint: "c"
                 value: root.detailIdentity ? root.detailIdentity.email : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.email : "", "Email")
+                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.email : "", Tr.text("Email"))
               }
 
               DetailField {
                 visible: root.detailIsIdentity
-                label: "Phone"
+                label: Tr.text("Phone")
                 value: root.detailIdentity ? root.detailIdentity.phone : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
-                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.phone : "", "Phone")
+                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.phone : "", Tr.text("Phone"))
               }
 
               // The three an identity item usually exists to hold. Masked for
@@ -10776,46 +10782,46 @@ Item {
               // them, and unlike a password they cannot be rotated.
               DetailField {
                 visible: root.detailIsIdentity
-                label: "Social Security Number"
-                copyLabel: "SSN"
+                label: Tr.text("Social Security Number")
+                copyLabel: Tr.text("SSN")
                 sensitive: true
                 revealed: root.isFieldRevealed("ssn")
                 value: root.detailIdentity ? root.detailIdentity.ssn : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
                 onRevealToggled: root.toggleFieldReveal("ssn")
-                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.ssn : "", "SSN")
+                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.ssn : "", Tr.text("SSN"))
               }
 
               DetailField {
                 visible: root.detailIsIdentity
-                label: "Passport Number"
-                copyLabel: "Passport number"
+                label: Tr.text("Passport Number")
+                copyLabel: Tr.text("Passport number")
                 sensitive: true
                 revealed: root.isFieldRevealed("passport")
                 value: root.detailIdentity ? root.detailIdentity.passportNumber : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
                 onRevealToggled: root.toggleFieldReveal("passport")
-                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.passportNumber : "", "Passport number")
+                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.passportNumber : "", Tr.text("Passport number"))
               }
 
               DetailField {
                 visible: root.detailIsIdentity
-                label: "Licence Number"
-                copyLabel: "Licence number"
+                label: Tr.text("Licence Number")
+                copyLabel: Tr.text("Licence number")
                 sensitive: true
                 revealed: root.isFieldRevealed("licence")
                 value: root.detailIdentity ? root.detailIdentity.licenseNumber : ""
                 foreground: root.fg
                 fontFamily: root.fontFamily
                 onRevealToggled: root.toggleFieldReveal("licence")
-                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.licenseNumber : "", "Licence number")
+                onCopyRequested: root.copyToClipboard(root.detailIdentity ? root.detailIdentity.licenseNumber : "", Tr.text("Licence number"))
               }
 
               PanelSectionHeader {
                 visible: root.detailIsIdentity && root.detailIdentityAddress !== ""
-                text: "ADDRESS"
+                text: Tr.text("ADDRESS")
               }
 
               // One block, not seven rows. An address is copied as an address.
@@ -10848,9 +10854,9 @@ Item {
                     id: copyAddressBtn
                     anchors.verticalCenter: parent.verticalCenter
                     iconText: "󰈙"
-                    tooltipText: "Copy address"
+                    tooltipText: Tr.text("Copy address")
                     fontFamily: root.fontFamily
-                    onClicked: root.copyToClipboard(root.detailIdentityAddress, "Address")
+                    onClicked: root.copyToClipboard(root.detailIdentityAddress, Tr.text("Address"))
                   }
                 }
               }
@@ -10874,7 +10880,7 @@ Item {
             spacing: Style.space(8)
 
             Button {
-              text: "Cancel (Esc)"
+              text: Tr.text("Cancel (Esc)")
               iconText: "󰁍"
               fontFamily: root.fontFamily
               fontSize: Style.font.bodySmall
@@ -10886,7 +10892,7 @@ Item {
             Text {
               textFormat: Text.PlainText
               Layout.alignment: Qt.AlignVCenter
-              text: root.formIsEditing ? "Edit Item" : "New Vault Item"
+              text: root.formIsEditing ? Tr.text("Edit Item") : Tr.text("New Vault Item")
               color: root.fg
               font.family: root.fontFamily
               font.pixelSize: Style.font.title
@@ -10920,7 +10926,7 @@ Item {
                 spacing: Style.space(8)
 
                 Button {
-                  text: "Login"
+                  text: Tr.text("Login")
                   iconText: "󰌋"
                   selected: root.formTypeCode === 1
                   fontFamily: root.fontFamily
@@ -10929,7 +10935,7 @@ Item {
                 }
 
                 Button {
-                  text: "Secure Note"
+                  text: Tr.text("Secure Note")
                   iconText: "󰈙"
                   selected: root.formTypeCode === 2
                   fontFamily: root.fontFamily
@@ -10937,7 +10943,7 @@ Item {
                   onClicked: root.formTypeCode = 2
                 }
                 Button {
-                  text: "Card"
+                  text: Tr.text("Card")
                   iconText: "󰿯"
                   selected: root.formTypeCode === 3
                   fontFamily: root.fontFamily
@@ -10946,7 +10952,7 @@ Item {
                 }
 
                 Button {
-                  text: "Identity"
+                  text: Tr.text("Identity")
                   iconText: ""
                   selected: root.formTypeCode === 4
                   fontFamily: root.fontFamily
@@ -10959,11 +10965,11 @@ Item {
               Column {
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "TITLE / NAME *"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("TITLE / NAME *"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   id: formNameField
                   width: parent.width
-                  placeholderText: "e.g. GitHub, Google, Work Server..."
+                  placeholderText: Tr.text("e.g. GitHub, Google, Work Server...")
                   text: root.formName
                   onTextChanged: root.formName = text
                 }
@@ -10974,7 +10980,7 @@ Item {
               Column {
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "FOLDER"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("FOLDER"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
 
                 Button {
                   width: parent.width
@@ -11011,7 +11017,7 @@ Item {
                       width: parent.width
                       foreground: root.fg
                       fontFamily: root.fontFamily
-                      label: "No Folder"
+                      label: Tr.text("No Folder")
                       glyph: "\u{F0256}"
                       picked: !root.formFolderId
                       onActivated: root.setFormFolder("")
@@ -11040,7 +11046,7 @@ Item {
 
                   TextField {
                     width: parent.width - Style.space(96)
-                    placeholderText: "New folder name..."
+                    placeholderText: Tr.text("New folder name...")
                     text: root.newFolderName
                     onTextChanged: root.newFolderName = text
                     onAccepted: root.submitNewFolder()
@@ -11048,7 +11054,7 @@ Item {
                   }
 
                   Button {
-                    text: root.creatingFolder ? "Adding..." : "Add"
+                    text: root.creatingFolder ? Tr.text("Adding...") : Tr.text("Add")
                     iconText: root.creatingFolder ? "\u{F0450}" : "\u{F0415}"
                     iconSpinning: root.creatingFolder
                     fontFamily: root.fontFamily
@@ -11064,7 +11070,7 @@ Item {
                 visible: root.organizations.length > 0
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "ORGANIZATION"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("ORGANIZATION"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
 
                 Button {
                   width: parent.width
@@ -11101,7 +11107,7 @@ Item {
                       width: parent.width
                       foreground: root.fg
                       fontFamily: root.fontFamily
-                      label: "My Vault"
+                      label: Tr.text("My Vault")
                       glyph: "\u{F0004}"
                       picked: !root.formOrgId || root.formOrgId === "personal"
                       onActivated: root.setFormOrganization("")
@@ -11137,7 +11143,7 @@ Item {
                     spacing: Style.space(6)
                     Text {
                       textFormat: Text.PlainText
-                      text: "COLLECTIONS"
+                      text: Tr.text("COLLECTIONS")
                       color: root.formCollectionIds.length === 0 ? root.urgent : root.dim
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
@@ -11148,8 +11154,8 @@ Item {
                       text: root.formCollectionsLoading
                         ? "loading..."
                         : (root.formCollectionIds.length === 0
-                            ? "pick at least one"
-                            : root.formCollectionIds.length + " selected")
+                            ? Tr.text("pick at least one")
+                            : root.formCollectionIds.length + Tr.text(" selected"))
                       color: root.formCollectionIds.length === 0 ? root.urgent : root.dim
                       font.family: root.fontFamily
                       font.pixelSize: Style.font.caption
@@ -11178,7 +11184,7 @@ Item {
                         textFormat: Text.PlainText
                         visible: !root.formCollectionsLoading && root.formCollections.length === 0
                         width: parent.width
-                        text: "No collections available in this organization."
+                        text: Tr.text("No collections available in this organization.")
                         color: root.dim
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
@@ -11211,10 +11217,10 @@ Item {
                 visible: root.formTypeCode === 1
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "USERNAME / EMAIL"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("USERNAME / EMAIL"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
-                  placeholderText: "username or email address..."
+                  placeholderText: Tr.text("username or email address...")
                   text: root.formUsername
                   onTextChanged: root.formUsername = text
                 }
@@ -11227,12 +11233,12 @@ Item {
                 spacing: Style.space(3)
                 RowLayout {
                   width: parent.width
-                  Text { textFormat: Text.PlainText; text: "PASSWORD"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                  Text { textFormat: Text.PlainText; text: Tr.text("PASSWORD"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                   Item { Layout.fillWidth: true }
                   // Opens the real generator, which fills this field in and
                   // comes back. The ellipsis says it goes somewhere first.
                   Button {
-                    text: "Generate..."
+                    text: Tr.text("Generate...")
                     iconText: "󰌆"
                     fontFamily: root.fontFamily
                     fontSize: Style.font.caption
@@ -11245,7 +11251,7 @@ Item {
                   TextField {
                     id: formPassField
                     width: parent.width - eyeBtnForm.width - Style.space(6)
-                    placeholderText: "Password..."
+                    placeholderText: Tr.text("Password...")
                     password: !root.formPasswordRevealed
                     text: root.formPassword
                     onTextChanged: root.formPassword = text
@@ -11253,7 +11259,7 @@ Item {
                   Button {
                     id: eyeBtnForm
                     iconText: root.formPasswordRevealed ? "󰈉" : "󰈈"
-                    tooltipText: root.formPasswordRevealed ? "Hide password" : "Show password"
+                    tooltipText: root.formPasswordRevealed ? Tr.text("Hide password") : Tr.text("Show password")
                     fontFamily: root.fontFamily
                     onClicked: root.formPasswordRevealed = !root.formPasswordRevealed
                   }
@@ -11265,10 +11271,10 @@ Item {
                 visible: root.formTypeCode === 1
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "AUTHENTICATOR KEY (TOTP SECRET)"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("AUTHENTICATOR KEY (TOTP SECRET)"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
-                  placeholderText: "e.g. JBSWY3DPEHPK3PXP (optional)..."
+                  placeholderText: Tr.text("e.g. JBSWY3DPEHPK3PXP (optional)...")
                   text: root.formTotp
                   onTextChanged: root.formTotp = text
                 }
@@ -11279,7 +11285,7 @@ Item {
                 visible: root.formTypeCode === 1
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "WEBSITE URL"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("WEBSITE URL"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: "https://example.com/login..."
@@ -11298,10 +11304,10 @@ Item {
                 visible: root.formTypeCode === 3
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "CARDHOLDER NAME"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("CARDHOLDER NAME"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
-                  placeholderText: "Name as printed on the card"
+                  placeholderText: Tr.text("Name as printed on the card")
                   text: root.formCardholderName
                   onTextChanged: root.formCardholderName = text
                 }
@@ -11310,7 +11316,7 @@ Item {
                 visible: root.formTypeCode === 3
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "BRAND"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("BRAND"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: "Visa, Mastercard, Amex..."
@@ -11322,7 +11328,7 @@ Item {
                 visible: root.formTypeCode === 3
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "CARD NUMBER"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("CARD NUMBER"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: "1234 5678 9012 3456"
@@ -11334,7 +11340,7 @@ Item {
                 visible: root.formTypeCode === 3
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "EXPIRY MONTH"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("EXPIRY MONTH"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: "MM"
@@ -11346,10 +11352,10 @@ Item {
                 visible: root.formTypeCode === 3
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "EXPIRY YEAR"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("EXPIRY YEAR"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
-                  placeholderText: "YYYY"
+                  placeholderText: Tr.text("YYYY")
                   text: root.formCardExpYear
                   onTextChanged: root.formCardExpYear = text
                 }
@@ -11358,7 +11364,7 @@ Item {
                 visible: root.formTypeCode === 3
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "SECURITY CODE"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("SECURITY CODE"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: "CVV / CVC"
@@ -11374,10 +11380,10 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "TITLE"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("TITLE"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
-                  placeholderText: "Mr, Ms, Dr..."
+                  placeholderText: Tr.text("Mr, Ms, Dr...")
                   text: root.formIdTitle
                   onTextChanged: root.formIdTitle = text
                 }
@@ -11386,7 +11392,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "FIRST NAME"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("FIRST NAME"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11398,7 +11404,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "MIDDLE NAME"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("MIDDLE NAME"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11410,7 +11416,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "LAST NAME"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("LAST NAME"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11422,7 +11428,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "USERNAME"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("USERNAME"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11434,7 +11440,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "COMPANY"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("COMPANY"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11446,7 +11452,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "EMAIL"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("EMAIL"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: "name@example.com"
@@ -11458,7 +11464,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "PHONE"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("PHONE"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11470,7 +11476,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "SOCIAL SECURITY NUMBER"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("SOCIAL SECURITY NUMBER"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11482,7 +11488,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "PASSPORT NUMBER"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("PASSPORT NUMBER"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11494,7 +11500,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "LICENCE NUMBER"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("LICENCE NUMBER"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11506,7 +11512,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "ADDRESS LINE 1"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("ADDRESS LINE 1"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11518,7 +11524,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "ADDRESS LINE 2"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("ADDRESS LINE 2"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11530,7 +11536,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "ADDRESS LINE 3"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("ADDRESS LINE 3"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11542,7 +11548,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "CITY / TOWN"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("CITY / TOWN"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11554,7 +11560,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "STATE / COUNTY"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("STATE / COUNTY"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11566,7 +11572,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "POSTAL CODE"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("POSTAL CODE"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11578,7 +11584,7 @@ Item {
                 visible: root.formTypeCode === 4
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "COUNTRY"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("COUNTRY"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
                   placeholderText: ""
@@ -11591,10 +11597,10 @@ Item {
               Column {
                 width: parent.width
                 spacing: Style.space(3)
-                Text { textFormat: Text.PlainText; text: "NOTES"; color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+                Text { textFormat: Text.PlainText; text: Tr.text("NOTES"); color: root.dim; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: true }
                 TextField {
                   width: parent.width
-                  placeholderText: "Additional secure notes..."
+                  placeholderText: Tr.text("Additional secure notes...")
                   text: root.formNotes
                   onTextChanged: root.formNotes = text
                 }
@@ -11604,7 +11610,7 @@ Item {
               Row {
                 spacing: Style.space(8)
                 Button {
-                  text: root.formFavorite ? "★ In Favorites" : "☆ Add to Favorites"
+                  text: root.formFavorite ? Tr.text("★ In Favorites") : Tr.text("☆ Add to Favorites")
                   selected: root.formFavorite
                   accent: Color.accent
                   fontFamily: root.fontFamily
@@ -11631,8 +11637,8 @@ Item {
               Button {
                 width: parent.width
                 text: root.isLoading
-                  ? "Saving..."
-                  : (root.formIsEditing ? "Save Changes (Enter)" : "Create Item (Enter)")
+                  ? Tr.text("Saving...")
+                  : (root.formIsEditing ? Tr.text("Save Changes (Enter)") : Tr.text("Create Item (Enter)"))
                 iconText: root.isLoading ? "󰑐" : "󰄬"
                 iconSpinning: root.isLoading
                 selected: true
@@ -11662,7 +11668,7 @@ Item {
         accentColor: root.accent
         urgentColor: root.urgent
         fontFamily: root.fontFamily
-        actionLabel: root.failedSave ? "Reopen " + root.failedSave.name : ""
+        actionLabel: root.failedSave ? Tr.text("Reopen ") + root.failedSave.name : ""
         onActionRequested: root.reopenFailedSave()
         onErrorDismissed: {
           // Dismissing the message drops the recovery with it: the list is
