@@ -25,7 +25,7 @@ Install directly from this repository while the DMS registry submission is pendi
 
 ```sh
 mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins"
-git clone --branch dms-port https://github.com/coldi1337/dms-bitwarden-cli.git \
+git clone --branch main https://github.com/coldi1337/dms-bitwarden-cli.git \
   "${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins/bitwarden"
 dms ipc call plugin-scan scan
 dms ipc call plugins enable bitwarden
