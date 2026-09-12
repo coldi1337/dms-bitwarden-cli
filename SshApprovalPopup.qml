@@ -1,8 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import qs.Commons
-import qs.Ui
+import "DmsUi"
 
 // A transient, centered SSH authorization surface. The full-screen layer
 // window supplies the scrim, outside-click denial, and keyboard focus; only

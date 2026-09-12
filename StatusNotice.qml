@@ -1,6 +1,5 @@
 import QtQuick
-import qs.Commons
-import qs.Ui
+import "DmsUi"
 
 // A transient panel-local notice. It anchors to its parent as an overlay and
 // deliberately reports no height to the parent's content layout.

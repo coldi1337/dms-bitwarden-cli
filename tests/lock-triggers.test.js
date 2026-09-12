@@ -55,7 +55,7 @@ for (const [raw, want] of LOCK_ANSWERS) {
 
 const lockCmd = Model.screenLockStateCommand()
 check("screen lock state is asked of the shell's own lock plugin",
-  lockCmd.join(" ").includes("omarchy-shell lock isLocked"), lockCmd.join(" "))
+  lockCmd.join(" ").includes("dms ipc call lock isLocked"), lockCmd.join(" "))
 
 check("screen lock state bounds what it will read back",
   /head -c \d+/.test(lockCmd.join(" ")), lockCmd.join(" "))

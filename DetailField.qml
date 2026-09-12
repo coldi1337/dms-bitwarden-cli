@@ -1,6 +1,5 @@
 import QtQuick
-import qs.Commons
-import qs.Ui
+import "DmsUi"
 import "BitwardenModel.js" as Model
 
 // One labelled, copyable field on the detail screen.

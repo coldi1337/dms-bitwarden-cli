@@ -138,7 +138,7 @@ for (const [name, build] of builders) {
 const login = Model.terminalLoginCommand("login")[2]
 const unlock = Model.terminalLoginCommand("unlock")[2]
 const euLogin = Model.terminalLoginCommand("login", "https://vault.bitwarden.eu")[2]
-check("terminal login runs in a terminal", login.includes("omarchy launch terminal"), login.slice(0, 80))
+check("terminal login runs in a terminal", login.includes("xdg-terminal-exec"), login.slice(0, 80))
 check("it falls back to a second terminal if the first is unavailable",
   login.includes("alacritty"), login.slice(0, 80))
 // --raw prints only the session key on stdout while prompts stay on stderr,
@@ -159,7 +159,7 @@ check("terminal login configures an explicitly selected region before authentica
   euLogin.slice(0, 300))
 // Only the method name crosses the IPC boundary; the key never does.
 check("a successful login reopens the panel",
-  login.includes("omarchy-shell io.github.elevate08.qs-bitwarden-cli open"), login.slice(0, 300))
+  login.includes("dms ipc call bitwarden open"), login.slice(0, 300))
 check("the session key is not passed over IPC",
   !login.includes("open $f") && !login.includes("open \"$f\""), login.slice(0, 300))
 // The inner script appears twice -- once for the terminal, once for the

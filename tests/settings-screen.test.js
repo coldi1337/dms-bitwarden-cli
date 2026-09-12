@@ -31,34 +31,15 @@ check("colorized icon reads the persisted boolean setting",
   /readonly property bool colorizeIcon: Model\.boolSetting\("colorizeIcon", setting\("colorizeIcon", false\)\)/.test(panelSrc),
   "expected a false-safe colorizeIcon setting property")
 
-check("colorized icon uses the theme accent only when enabled",
-  /color:\s*root\.colorizeIcon \? Color\.accent : \(bar \? bar\.barForeground : Color\.foreground\)/.test(shield),
-  "expected the primary shield to select Color.accent or its existing foreground")
-
-check("colorized icon leaves status badges independent",
-  shield.includes("color: bar ? bar.urgent : Color.urgent")
-    && shield.includes("color: bar ? bar.barForeground : Color.foreground"),
-  "expected urgent and locked badge colors to remain independently bound")
-
-check("panel-open indicator keeps Omarchy's standard width",
-  !panelSrc.includes("openPanelIndicatorWidth"),
-  "expected no plugin-specific width override for the panel-open indicator")
-
-check("custom shield corrects its painted side bearings",
-  shield.includes("id: shieldGlyphMetrics")
-    && shield.includes("shieldGlyphMetrics.tightBoundingRect")
-    && shield.includes("anchors.horizontalCenterOffset"),
-  "expected corrected painted side bearings on the shield")
-
-// The centering above is what aligns the glyph with the panel-open indicator;
-// the renderer is not part of it -- both put the painted center on the same
-// pixel at scale 1.3333. QtRendering additionally drew saturated colour along
-// the glyph edges, which no other icon in the bar has, so the shield renders
-// the way the rest of Omarchy does.
-check("shield renders the way the rest of the bar does",
-  shield.includes("renderType: Text.NativeRendering")
-    && !shield.includes("renderType: Text.QtRendering"),
-  "expected the shield to use Text.NativeRendering, as Omarchy's own glyphs do")
+const dmsBar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
+check("DMS icon follows the configured accent toggle",
+  dmsBar.includes("colorizeIcon ? Theme.primary : Theme.widgetIconColor"), "wrong icon palette")
+check("DMS icon distinguishes a locked vault",
+  dmsBar.includes('status === "unlocked" ? "shield" : "lock"'), "missing lock indicator")
+check("DMS bar uses its native icon sizing",
+  dmsBar.includes("size: root.iconSize") && dmsBar.includes("DankIcon {"), "missing native icon")
+check("DMS supports horizontal and vertical bars",
+  dmsBar.includes("horizontalBarPill:") && dmsBar.includes("verticalBarPill:"), "missing orientation")
 
 check("the settings screen has a wrapper outside the scroll area", screenAt >= 0,
   "expected a settingsScreen Column")

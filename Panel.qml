@@ -4,15 +4,34 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pam
-import qs.Commons
-import qs.Ui
+import "DmsUi"
+import qs.Services
+import qs.Common as DmsCommon
 import "BitwardenModel.js" as Model
 
-Panel {
+Item {
   id: root
-  moduleName: "io.github.elevate08.qs-bitwarden-cli"
-  ipcTarget: "io.github.elevate08.qs-bitwarden-cli"
-  manageIpc: false
+  property string moduleName: "io.github.elevate08.qs-bitwarden-cli"
+  property string ipcTarget: "io.github.elevate08.qs-bitwarden-cli"
+  property string pluginId: "bitwarden"
+  property var pluginService: null
+  property var bar: null
+  property Item barAnchor: null
+  property bool opened: false
+  readonly property var savedSettings: DmsCommon.SettingsData.getPluginSettingsForPlugin(pluginId)
+  function setting(key, fallback) {
+    if (savedSettings && savedSettings[key] !== undefined) return savedSettings[key];
+    const entry = Model.settingSchemaEntry(key);
+    return fallback !== undefined ? fallback : (entry ? entry.defaultValue : undefined);
+  }
+  readonly property QtObject controller: QtObject {
+    function show() { root.opened = true; }
+    function hide() { root.opened = false; }
+  }
+  function setAnchor(item, x, y, width, section, screen, position, thickness, spacing, config) {
+    barAnchor = item;
+    panel.setTriggerPosition(x, y, width, section, screen, position, thickness, spacing, config);
+  }
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
@@ -551,6 +570,15 @@ Panel {
     return bar ? bar.urgent : Color.urgent
   }
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
+
+  Component.onDestruction: {
+    // Daemon removal closes its processes. Detach the session revoke so it
+    // still completes after QML destruction; SSH helper EOF drops its keys.
+    if (root.session) Quickshell.execDetached({command: Model.lockCommand(), environment: root.bwEnv()});
+    Quickshell.execDetached(Model.keyringClearCommand());
+    if (clipboardClearTimer.running) Quickshell.execDetached(["wl-copy", "--clear"]);
+    root.session = "";
+  }
 
   Component.onCompleted: {
     // The dependency probe goes first, and the status probe follows from it in
@@ -1259,6 +1287,10 @@ Panel {
   }
 
   onStatusChanged: {
+    if (status === "unlocked" && lockOnScreenLock && IdleService.isShellLocked) {
+      root.lockVault();
+      return;
+    }
     promoteUnlockToApproval()
     maybeStartupLoad()
   }
@@ -1444,6 +1476,9 @@ Panel {
   // -------------------------------------------------------------------------
 
   function open() {
+    if (IdleService.isShellLocked) return;
+    const widget = BarWidgetService.getWidgetOnFocusedScreen("bitwarden");
+    if (widget && widget.prepareVaultAnchor) widget.prepareVaultAnchor();
     errorMessage = ""
     flashMessage = ""
     revealedFields = ({})
@@ -3430,11 +3465,10 @@ Panel {
     currentScreen = (screenBeforeSettings === "settings" ? "main" : screenBeforeSettings)
   }
 
-  // Persisted via `omarchy bar set`, which owns shell.json. The shell reloads
-  // on write, so setting() reflects the new value without us caching it.
+  // DMS owns persistence and emits the reactive settings update for every bar.
   function writeSetting(key, value, type) {
-    settingWriteProc.command = Model.settingWriteCommand(key, value, type)
-    settingWriteProc.running = true
+    if (!root.pluginService) return;
+    root.pluginService.savePluginData(root.pluginId, key, value);
     settingsFlash = "Saved"
     settingsFlashTimer.restart()
   }
@@ -3443,8 +3477,8 @@ Panel {
   // written without the settings screen's "Saved" flash -- it is a note the
   // login leaves for the next one, and it has no row to flash next to.
   function writeSettingQuietly(key, value, type) {
-    settingWriteProc.command = Model.settingWriteCommand(key, value, type)
-    settingWriteProc.running = true
+    if (!root.pluginService) return;
+    root.pluginService.savePluginData(root.pluginId, key, value);
   }
 
   function rememberTwoFactorMethod(method) {
@@ -5434,7 +5468,7 @@ Panel {
         // clipboard, and a notification is not a private channel: the daemon
         // keeps history and can render the body over a lock screen. The panel
         // shows the digits on screen instead, where you asked for them.
-        Quickshell.execDetached(["omarchy-notification-send", "-g", "󰥔", "--app-name", "Bitwarden", "-t", "4000", "TOTP Code Copied", "2FA verification code ready to paste"])
+        Quickshell.execDetached(["notify-send", "--app-name", "Bitwarden", "-t", "4000", "TOTP Code Copied", "2FA verification code ready to paste"])
         root.totpFollowupActive = false
       }
     }
@@ -5494,11 +5528,19 @@ Panel {
   // The last reading from the screen-lock poll, with the moment it was taken.
   // The agent needs this even when lockOnScreenLock is off, because it must
   // never raise an approval prompt over a locked screen.
+  Connections {
+    target: IdleService
+    function onIsShellLockedChanged() {
+      root.onScreenLockState(IdleService.isShellLocked ? "true" : "false");
+      if (IdleService.isShellLocked && root.opened) root.close();
+    }
+  }
+
   property bool screenIsLocked: false
   property double screenLockCheckedAt: 0
 
   function onScreenLockState(raw) {
-    root.screenIsLocked = Model.screenIsLocked(raw)
+    root.screenIsLocked = Model.screenIsLocked(raw) || IdleService.isShellLocked
     root.screenLockCheckedAt = Date.now()
     if (!lockOnScreenLock || status !== "unlocked") return
     if (root.screenIsLocked) lockVault()
@@ -6026,7 +6068,7 @@ Panel {
 
   Process {
     id: depsCheckProc
-    command: Model.dependencyCheckCommand()
+    command: Model.dependencyCheckCommand(Quickshell.shellDir + "/assets/pam")
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.onDependenciesChecked(text)
@@ -6192,7 +6234,8 @@ Panel {
 
   PamContext {
     id: fingerprintPam
-    config: "omarchy-lock-fingerprint"
+    config: "fprint"
+    configDirectory: Quickshell.shellDir + "/assets/pam"
     user: root.userName
 
     onCompleted: function(result) {
@@ -6441,7 +6484,7 @@ Panel {
   // -------------------------------------------------------------------------
 
   IpcHandler {
-    target: "io.github.elevate08.qs-bitwarden-cli"
+    target: "bitwarden"
     function open(): void { root.open() }
     function close(): void { root.close() }
     function toggle(): void { root.toggle() }
@@ -6456,6 +6499,23 @@ Panel {
     }
     function sync(): string { root.syncVault(); return "syncing" }
     function status(): string { return root.status }
+    function writeSettingJson(key: string, json: string): string {
+      if ((!Model.settingSchemaEntry(key) && key !== "twoFactorMethods") || json.length > 4096) return "invalid setting";
+      var value;
+      try { value = JSON.parse(json); } catch (e) { return "invalid JSON"; }
+      if (key === "twoFactorMethods") {
+        if (!value || typeof value !== "object" || Array.isArray(value)
+            || Object.keys(value).length > 10
+            || Object.keys(value).some(k => k.length > 320 || !Model.isTwoFactorMethod(value[k]))) return "invalid value";
+        root.writeSettingQuietly(key, value, "json");
+        return "saved";
+      }
+      const entry = Model.settingSchemaEntry(key);
+      if (entry.type === "bool" && typeof value !== "boolean") return "invalid value";
+      if (entry.type === "int" && (typeof value !== "number" || !isFinite(value))) return "invalid value";
+      root.writeSetting(key, value, entry.type);
+      return "saved";
+    }
     // Non-secret diagnostics for the SSH agent. No key material, no
     // fingerprints, no process paths -- just enough to tell why a signature
     // was or was not answered.
@@ -6511,151 +6571,16 @@ Panel {
     }
   }
 
-  Component {
-    id: shieldIconComp
-
-    Item {
-      anchors.fill: parent
-
-      // Constant Base Shield
-      TextMetrics {
-        id: shieldGlyphMetrics
-        font.family: root.fontFamily
-        font.pixelSize: Style.bar.iconFont
-        text: "󰞀"
-      }
-
-      Text {
-        textFormat: Text.PlainText
-        id: shieldGlyph
-        // The centering below is what holds the glyph on the same logical
-        // centerline as the bar's panel-open indicator; the renderer does not
-        // enter into it. Measured at scale 1.3333, QtRendering and
-        // NativeRendering put the painted center on the same pixel -- but
-        // QtRendering came out with saturated colour on the glyph edges, blue
-        // down one side and gold down the other, which no other icon in the bar
-        // has. So this matches what Omarchy uses everywhere else
-        // (Ui/OpticalGlyph.qml, Ui/WidgetButton.qml) and the plugin's own lock
-        // and install badges below.
-        anchors.centerIn: parent
-        anchors.horizontalCenterOffset: shieldGlyph.implicitWidth / 2
-          - (shieldGlyphMetrics.tightBoundingRect.x
-            + shieldGlyphMetrics.tightBoundingRect.width / 2)
-        text: "󰞀"
-        font.family: root.fontFamily
-        font.pixelSize: Style.bar.iconFont
-        color: root.colorizeIcon ? Color.accent : (bar ? bar.barForeground : Color.foreground)
-        renderType: Text.NativeRendering
-      }
-
-      // Mini Install Badge in the same corner while a required tool is absent.
-      // A freshly installed widget has to say "click me, there is one step
-      // left" rather than sit there looking like it failed, so this outranks
-      // the padlock: with no `bw` there is no lock state worth reporting.
-      Item {
-        visible: root.missingRequired.length > 0
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.rightMargin: -Style.space(2)
-        anchors.bottomMargin: -Style.space(2)
-        width: Style.space(10)
-        height: Style.space(10)
-
-        Rectangle {
-          anchors.fill: parent
-          radius: width / 2
-          color: bar ? bar.background : Color.background
-        }
-
-        Text {
-          textFormat: Text.PlainText
-          anchors.centerIn: parent
-          text: "󰐕"
-          font.family: root.fontFamily
-          font.pixelSize: Style.space(8)
-          color: bar ? bar.urgent : Color.urgent
-          renderType: Text.NativeRendering
-        }
-      }
-
-      // Mini Padlock Badge in Bottom-Right Corner when locked
-      Item {
-        visible: root.status === "locked" && root.missingRequired.length === 0
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.rightMargin: -Style.space(2)
-        anchors.bottomMargin: -Style.space(2)
-        width: Style.space(10)
-        height: Style.space(10)
-
-        Rectangle {
-          anchors.fill: parent
-          radius: width / 2
-          color: bar ? bar.background : Color.background
-        }
-
-        Text {
-          textFormat: Text.PlainText
-          anchors.centerIn: parent
-          text: "󰌾"
-          font.family: root.fontFamily
-          font.pixelSize: Style.space(8)
-          color: bar ? bar.barForeground : Color.foreground
-          renderType: Text.NativeRendering
-        }
-      }
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Status Bar Button
-  // -------------------------------------------------------------------------
-
-  BarIconButton {
-    id: button
-    anchors.fill: parent
-    bar: root.bar
-    iconComponent: shieldIconComp
-    useActiveColor: false
-    dimmed: root.status === "unauthenticated" || root.status === "checking"
-    tooltipText: {
-      // Ahead of every status: with a required tool missing, whatever `bw`
-      // last said about the vault is beside the point.
-      if (root.missingRequired.length > 0) {
-        return "Bitwarden (Click to finish setup)"
-      }
-      if (root.status === "unlocked") {
-        return "Bitwarden (" + (root.items.length > 0 ? root.items.length + " items" : "Unlocked") + ")"
-      }
-      if (root.status === "locked") {
-        return "Bitwarden (Locked)"
-      }
-      return "Bitwarden (Not Logged In)"
-    }
-    onPressed: function(buttonCode) {
-      if (buttonCode === Qt.RightButton) {
-        if (root.status === "unlocked") root.lockVault()
-        else root.open()
-      } else if (buttonCode === Qt.MiddleButton) {
-        root.syncVault()
-      } else {
-        root.toggle()
-      }
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Popup Window (KeyboardPanel)
-  // -------------------------------------------------------------------------
+  Item { id: button; width: 24; height: 24; visible: false }
 
   SshApprovalPopup {
     panel: root
-    anchorItem: button
+    anchorItem: root.barAnchor || button
   }
 
   KeyboardPanel {
     id: panel
-    anchorItem: button
+    anchorItem: root.barAnchor || button
     owner: root
     bar: root.bar
     open: root.opened
@@ -8244,8 +8169,8 @@ Panel {
                   text: modelData.setup ? "Set up" : "Install"
                   iconText: modelData.setup ? "󰈷" : "󰐕"
                   tooltipText: modelData.setup
-                    ? "omarchy setup security fingerprint"
-                    : "omarchy install app " + modelData.pkg
+                    ? "Configure fingerprint authentication for DMS"
+                    : "Install package: " + modelData.pkg
                   fontFamily: root.fontFamily
                   fontSize: Style.font.caption
                   onClicked: root.installOne(modelData)
@@ -8275,7 +8200,7 @@ Panel {
               iconText: "󰐕"
               selected: true
               accent: Color.accent
-              tooltipText: "omarchy install app " + root.installablePackages.join(" ")
+              tooltipText: "Install package: " + root.installablePackages.join(" ")
               fontFamily: root.fontFamily
               fontSize: Style.font.bodySmall
               onClicked: root.installMissing()
@@ -8727,7 +8652,7 @@ Panel {
             Text {
               textFormat: Text.PlainText
               width: parent.width
-              text: "Saved to the plugin's entry in ~/.config/omarchy/shell.json via `omarchy bar set`."
+              text: "Saved in DankMaterialShell plugin settings."
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption

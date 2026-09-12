@@ -65,7 +65,7 @@ const noRuntime = { PATH: bin + ":" + process.env.PATH, HOME: tmp }
 const withRuntime = { ...noRuntime, XDG_RUNTIME_DIR: tmp }
 
 // The inner script is what the terminal runs; pull it out of the quoted wrapper.
-const innerLogin = login.match(/omarchy launch terminal -e bash -c '(.*)' \|\| alacritty/)[1].replace(/'\\''/g, "'")
+const innerLogin = login.match(/then exec xdg-terminal-exec bash -c '(.*?)'; elif/s)[1].replace(/'\\''/g, "'")
 
 const denied = runInner(innerLogin, noRuntime)
 check("with no runtime dir the login script exits non-zero and writes no key",
@@ -83,7 +83,7 @@ const handoffDir = path.join(tmp, "qs-bitwarden-cli")
 const redirectedDir = path.join(tmp, "redirected")
 fs.mkdirSync(redirectedDir)
 fs.symlinkSync(redirectedDir, handoffDir)
-const symlinkWrite = runInner(innerLogin.replace(/omarchy-shell[^;]*;/, "true;").replace(/read -p[^;]*;?/, ""), withRuntime)
+const symlinkWrite = runInner(innerLogin.replace(/dms ipc call bitwarden[^;]*;/, "true;").replace(/read -p[^;]*;?/, ""), withRuntime)
 check("a symlinked handoff directory makes terminal login fail closed",
   symlinkWrite.code !== 0 && !fs.existsSync(path.join(redirectedDir, "session-handoff")),
   `exit ${symlinkWrite.code}`)
@@ -95,7 +95,7 @@ fs.unlinkSync(handoffDir)
 
 // With a runtime dir, the round trip works and the directory is private.
 fs.mkdirSync(path.join(tmp, "qs-bitwarden-cli"), { recursive: true, mode: 0o755 })
-runInner(innerLogin.replace(/omarchy-shell[^;]*;/, "true;").replace(/read -p[^;]*;?/, ""), withRuntime)
+runInner(innerLogin.replace(/dms ipc call bitwarden[^;]*;/, "true;").replace(/read -p[^;]*;?/, ""), withRuntime)
 check("the handoff directory ends up private to the user",
   (fs.statSync(handoffDir).mode & 0o777) === 0o700,
   "0" + (fs.statSync(handoffDir).mode & 0o777).toString(8))

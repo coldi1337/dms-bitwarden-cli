@@ -463,7 +463,7 @@ TestCase {
   // The restated geometry above is only right while the kit's is unchanged.
   function test_button_geometry_is_still_the_kits() {
     var xhr = new XMLHttpRequest()
-    xhr.open("GET", "file:///usr/share/omarchy/shell/Ui/Button.qml", false)
+    xhr.open("GET", Qt.resolvedUrl("../../DmsUi/Button.qml"), false)
     xhr.send()
     var source = xhr.responseText || ""
     if (source.length === 0) return // kit not installed here; nothing to check

@@ -851,12 +851,11 @@ function terminalLoginCommand(mode, serverUrl) {
     + "if bw " + verb + " --raw > \"$f\" && [ -s \"$f\" ]; then "
     // Bring the panel back itself rather than making the user find it again.
     // Only the method name crosses this boundary; the key never does.
-    + "omarchy-shell io.github.elevate08.qs-bitwarden-cli open >/dev/null 2>&1 || true; "
+    + "dms ipc call bitwarden open >/dev/null 2>&1 || true; "
     + "echo; echo 'Done. Returning to the Bitwarden panel...'; sleep 1; "
     + "else rm -f \"$f\"; echo; echo 'Not completed -- nothing was handed to the panel.'; "
     + "read -p 'Press enter to close...'; fi"
-  var script = "omarchy launch terminal -e bash -c " + shellQuote(inner)
-    + " || alacritty -e bash -c " + shellQuote(inner)
+  var script = terminalScript(inner)
   return ["bash", "-c", script]
 }
 
@@ -971,7 +970,7 @@ function sessionHandoffReadCommand(expecting) {
 // because a vault that locks itself every few seconds on a machine with no
 // lock screen is a vault nobody can use.
 function screenLockStateCommand() {
-  return ["bash", "-c", "omarchy-shell lock isLocked 2>/dev/null | head -c 16"]
+  return ["bash", "-c", "dms ipc call lock isLocked 2>/dev/null | head -c 16"]
 }
 
 function screenIsLocked(raw) {
@@ -3511,7 +3510,7 @@ var DEPENDENCIES = [
   {
     // Not an `omarchy pkg add` row. Installing fprintd on its own gets nobody
     // anywhere: `ready` also wants an enrolled finger and the PAM stack at
-    // /etc/pam.d/omarchy-lock-fingerprint, and a package install produces
+    // /etc/pam.d/dms-bitwarden-fingerprint, and a package install produces
     // neither -- the row would stay red however many times it was pressed.
     // `omarchy setup security fingerprint` is the whole job in one command
     // (reader detection, libfprint/fprintd/usbutils, enrolment, verification,
@@ -3519,13 +3518,14 @@ var DEPENDENCIES = [
     key: "fprintd", label: "Fingerprint unlock", binary: "fprintd-list", pkg: "fprintd", aur: false,
     required: false, setup: true,
     // Only shown on a machine with a reader; see `applicable` below.
-    purpose: "Unlock the vault with your finger. Omarchy installs the reader stack and enrols you in one step."
+    purpose: "Unlock the vault with your finger. Uses your enrolled finger and the fingerprint PAM configuration shipped by DMS."
   }
 ]
 
 // One shell round trip: `key=1` or `key=0` per line, plus the fingerprint
 // enrolment state, which needs more than a binary being on PATH.
-function dependencyCheckCommand() {
+function dependencyCheckCommand(pamDirectory) {
+  var pamFile = pamDirectory ? String(pamDirectory) + "/fprint" : "/nonexistent/dms-fprint"
   var parts = []
   for (var i = 0; i < DEPENDENCIES.length; i++) {
     var d = DEPENDENCIES[i]
@@ -3539,16 +3539,16 @@ function dependencyCheckCommand() {
     + "if [[ \"$__qsbw_bw_version\" =~ ^v?[0-9]{4}\\.[0-9]{1,2}\\.[0-9]{1,6}$ ]]; then "
     + "printf 'bw_version=%s\\n' \"$__qsbw_bw_version\"; else echo bw_version=; fi; "
     + "else echo bw_version=; fi")
-  parts.push("if [ -f /etc/pam.d/omarchy-lock-fingerprint ] && command -v fprintd-list >/dev/null 2>&1 "
+  parts.push("if [ -f " + shellQuote(pamFile) + " ] && command -v fprintd-list >/dev/null 2>&1 "
     + "&& fprintd-list \"$USER\" 2>/dev/null | grep -qi finger; then echo fingerprint_ready=1; else echo fingerprint_ready=0; fi")
   // Omarchy's own reader detection, which reads sysfs rather than asking
   // fprintd -- so it answers before anything is installed, which is exactly
   // when the wizard needs to know whether to offer the row at all. A desktop
   // with no reader should not be shown a fingerprint option it can never
   // satisfy.
-  parts.push("if command -v omarchy-hw-fingerprint >/dev/null 2>&1 && omarchy-hw-fingerprint >/dev/null 2>&1; "
+  parts.push("if command -v fprintd-list >/dev/null 2>&1 && fprintd-list \"$USER\" 2>/dev/null | grep -qi finger; "
     + "then echo fingerprint_hw=1; else echo fingerprint_hw=0; fi")
-  parts.push("if command -v omarchy >/dev/null 2>&1; then echo omarchy=1; else echo omarchy=0; fi")
+  parts.push("if command -v dms >/dev/null 2>&1; then echo omarchy=1; else echo omarchy=0; fi")
   return ["bash", "-c", cappedScript("{ " + parts.join("; ") + "; } | head -c 4096")]
 }
 
@@ -5374,7 +5374,11 @@ function installPackagesCommand(pkgs, displayName) {
     if (!isPlainPackageName(pkgs[i])) return null
   }
   var name = displayName || (pkgs.length === 1 ? pkgs[0] : "Bitwarden plugin dependencies")
-  return ["omarchy", "install", "app", name, pkgs.join(" ")]
+  var inner = "if command -v pacman >/dev/null 2>&1; then sudo pacman -S --needed "
+    + pkgs.map(shellQuote).join(" ")
+    + "; else printf '%s\\n' " + shellQuote("Install these packages with your distribution package manager: " + pkgs.join(" "))
+    + "; fi; printf '\\nPress Enter to close'; read -r _answer";
+  return ["bash", "-c", terminalScript(inner)]
 }
 
 // Fingerprint is Omarchy's to set up, not ours: `omarchy setup security
@@ -5384,8 +5388,7 @@ function installPackagesCommand(pkgs, displayName) {
 // It runs in the same floating terminal as an install, since it is interactive
 // (sudo, then "keep moving the finger around on the sensor").
 function fingerprintSetupCommand() {
-  return ["omarchy", "launch", "floating", "terminal", "with", "presentation",
-    "omarchy setup security fingerprint"]
+  return ["bash", "-c", terminalScript("fprintd-enroll; printf '\\nPress Enter to close'; read -r _answer")]
 }
 
 // -------------------------------------------------------------------------
@@ -5581,8 +5584,8 @@ function settingWriteCommand(key, value, type) {
   // here; nothing secret is ever a setting.
   else if (type === "json") raw = JSON.stringify(value === undefined ? null : value)
   else raw = String(Number(value) || 0)
-  var script = "omarchy bar set io.github.elevate08.qs-bitwarden-cli "
-    + shellQuote(String(key)) + " " + shellQuote(raw) + " --json | head -c " + MAX_MISC_BYTES
+  var script = "dms ipc call bitwarden writeSettingJson "
+    + shellQuote(String(key)) + " " + shellQuote(raw) + " | head -c " + MAX_MISC_BYTES
   return ["bash", "-c", cappedScript(script, MAX_STDERR_BYTES)]
 }
 
@@ -6059,4 +6062,14 @@ function clipLabel(value, max) {
   if (text.length <= limit) return text
   if (limit <= 3) return text.slice(0, limit)
   return text.slice(0, limit - 3) + "..."
+}
+
+// Open an interactive CLI without depending on Omarchy's terminal launcher.
+function terminalScript(inner) {
+  var command = "bash -c " + shellQuote(inner);
+  return "if command -v xdg-terminal-exec >/dev/null 2>&1; then exec xdg-terminal-exec " + command
+    + "; elif command -v kitty >/dev/null 2>&1; then exec kitty " + command
+    + "; elif command -v alacritty >/dev/null 2>&1; then exec alacritty -e " + command
+    + "; elif command -v foot >/dev/null 2>&1; then exec foot " + command
+    + "; else printf '%s\n' 'No supported terminal found' >&2; exit 1; fi";
 }

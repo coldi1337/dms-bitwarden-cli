@@ -226,18 +226,18 @@ check("malformed lock settings fail back to their secure defaults",
     && Model.boolSetting("lockOnSuspend", 0) === true,
   "a malformed setting disabled locking")
 
-check("int setting is written with --json",
+check("int setting is written with",
   writeScript("autoLockMinutes", 15, "int")
-    .includes("omarchy bar set io.github.elevate08.qs-bitwarden-cli 'autoLockMinutes' '15' --json"),
+    .includes("dms ipc call bitwarden writeSettingJson 'autoLockMinutes' '15'"),
   writeScript("autoLockMinutes", 15, "int"))
 
 for (const [v, want] of [[true, "true"], [false, "false"]]) {
   const script = writeScript("closeOnCopy", v, "bool")
   check(`bool ${v} is written as ${want}`,
-    script.includes(`'closeOnCopy' '${want}' --json`), `got ${script}`)
+    script.includes(`'closeOnCopy' '${want}'`), `got ${script}`)
 }
 check("a zero int is written as 0, not dropped",
-  writeScript("autoLockMinutes", 0, "int").includes("'autoLockMinutes' '0' --json"),
+  writeScript("autoLockMinutes", 0, "int").includes("'autoLockMinutes' '0'"),
   writeScript("autoLockMinutes", 0, "int"))
 
 // stderr from `omarchy bar set` is collected by the panel, so it needs the same
@@ -268,7 +268,7 @@ check("manifest colorized icon schema matches the model contract",
 check("no packages yields no command", Model.installPackagesCommand([]) === null, "expected null")
 const inst = Model.installPackagesCommand(["bitwarden-cli", "wl-clipboard"])
 check("install goes through Omarchy's own floating-terminal installer",
-  inst.slice(0, 3).join(" ") === "omarchy install app" && inst[4] === "bitwarden-cli wl-clipboard",
+  inst[0] === "bash" && inst[2].includes("sudo pacman -S --needed") && inst[2].includes("bitwarden-cli") && inst[2].includes("wl-clipboard"),
   inst.join(" "))
 
 // The package list lands in an unquoted expansion inside omarchy-install-app,

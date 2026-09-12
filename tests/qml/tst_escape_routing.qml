@@ -22,7 +22,7 @@ import QtQuick.Controls
 import QtTest
 // Namespaced so the kit's own TextField (which needs the shell's import path)
 // does not shadow the plain QtQuick.Controls one used below.
-import "file:/usr/share/omarchy/shell/Ui" as OmarchyUi
+import "../../DmsUi/Keys" as DmsUi
 
 TestCase {
   id: tc
@@ -63,7 +63,7 @@ TestCase {
     }
   }
 
-  OmarchyUi.PanelKeyCatcher {
+  DmsUi.PanelKeyCatcher {
     id: catcher
     anchors.fill: parent
     Keys.forwardTo: [interceptor]

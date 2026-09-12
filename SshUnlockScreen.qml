@@ -1,6 +1,5 @@
 import QtQuick
-import qs.Commons
-import qs.Ui
+import "DmsUi"
 import "BitwardenModel.js" as Model
 
 // The first step of an SSH request when the vault is locked. Uses the same

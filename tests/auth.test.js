@@ -218,7 +218,7 @@ check("forgetting one account forgets only that one",
 // `flat` is declared further down; this block runs before it.
 const jsonWrite = Model.settingWriteCommand("twoFactorMethods", { "a@example.com": 1 }, "json").join(" ")
 check("a per-account map reaches shell.json as JSON, not as a number",
-  jsonWrite.includes('{"a@example.com":1}') && jsonWrite.includes("--json"), jsonWrite)
+  jsonWrite.includes('{"a@example.com":1}') && jsonWrite.includes("dms ipc call bitwarden writeSettingJson"), jsonWrite)
 check("an integer setting is still written as an integer",
   Model.settingWriteCommand("autoLockMinutes", 15, "int").join(" ").includes("'15'"),
   Model.settingWriteCommand("autoLockMinutes", 15, "int").join(" "))

@@ -1,6 +1,5 @@
 import QtQuick
-import qs.Commons
-import qs.Ui
+import "DmsUi"
 
 // One row in an item-form picker: folder, organization, or collection.
 //

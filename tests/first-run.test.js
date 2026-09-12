@@ -177,16 +177,16 @@ check("install: a package shared by two tools is only asked for once",
 // terminal, invent the wait-for-keypress, and still look like nothing else on
 // the system.
 const cmd = Model.installPackagesCommand(fresh, "Bitwarden CLI")
-check("install: goes through Omarchy's floating-terminal installer",
-  cmd.slice(0, 3).join(" ") === "omarchy install app",
+check("install: uses an interactive terminal and the host package manager",
+  cmd[0] === "bash" && cmd[2].includes("xdg-terminal-exec") && cmd[2].includes("sudo pacman -S --needed"),
   cmd.join(" "))
 
 check("install: names what is being installed, and asks for exactly the packages",
-  cmd[3] === "Bitwarden CLI" && cmd[4] === fresh.join(" "),
+  fresh.every(pkg => cmd[2].includes(pkg)) && !cmd[2].includes("pacman -Syu"),
   cmd.join(" "))
 
-check("install: no shell of our own to quote for",
-  cmd.every(a => typeof a === "string") && cmd.indexOf("-c") === -1,
+check("install: has no Omarchy command dependency",
+  cmd.every(a => typeof a === "string") && cmd[1] === "-c" && !cmd[2].includes("omarchy"),
   cmd.join(" "))
 
 // omarchy-install-app expands the package list unquoted -- that is how it
@@ -213,8 +213,8 @@ check("fingerprint: never reaches the package installer",
   "fprintd was handed to omarchy install app")
 
 const fp = Model.fingerprintSetupCommand()
-check("fingerprint: runs Omarchy's own setup in the floating terminal",
-  fp.join(" ") === "omarchy launch floating terminal with presentation omarchy setup security fingerprint",
+check("fingerprint: opens enrollment in a terminal",
+  fp[0] === "bash" && fp[2].includes("fprintd-enroll") && !fp[2].includes("omarchy"),
   fp.join(" "))
 
 // --- hardware the machine does not have -------------------------------------
@@ -243,7 +243,7 @@ check("reader: no reader never gates the panel",
 // or usbutils are installed -- which is precisely when the wizard has to
 // decide whether to draw the row.
 check("reader: detection uses omarchy-hw-fingerprint, in the same one probe",
-  Model.dependencyCheckCommand()[2].includes("omarchy-hw-fingerprint")
+  Model.dependencyCheckCommand()[2].includes("fprintd-list")
     && Model.dependencyCheckCommand().length === 3,
   Model.dependencyCheckCommand()[2])
 

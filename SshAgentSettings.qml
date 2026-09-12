@@ -1,6 +1,5 @@
 import QtQuick
-import qs.Commons
-import qs.Ui
+import "DmsUi"
 import "BitwardenModel.js" as Model
 
 // The SSH agent's own settings sections, lifted out of Panel.qml so that file
