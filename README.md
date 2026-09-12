@@ -1,6 +1,6 @@
 # Bitwarden for DankMaterialShell
 
-Local DMS port of [Elevate08/qs-bitwarden-cli](https://github.com/Elevate08/qs-bitwarden-cli), by David Spencer. MIT licensed.
+A Bitwarden and Vaultwarden plugin for DankMaterialShell, maintained by [coldi1337](https://github.com/coldi1337). Based on [Elevate08/qs-bitwarden-cli](https://github.com/Elevate08/qs-bitwarden-cli) by David Spencer. MIT licensed.
 
 Search, copy and manage a Bitwarden or Vaultwarden vault directly in a Quickshell panel. The official `bw` CLI performs vault operations. The plugin supports logins, secure notes, cards, identities, TOTP, folders, organizations, the password generator, Bitwarden Send and an optional SSH agent.
 
@@ -15,23 +15,28 @@ Search, copy and manage a Bitwarden or Vaultwarden vault directly in a Quickshel
 
 The setup screen identifies missing required dependencies. On Arch, its install action opens a terminal and runs `sudo pacman -S --needed` for the selected packages. On other distributions, install the named packages with the distribution's package manager.
 
-## Install this checkout locally
+## Installation
 
-Run from the repository directory:
+Install directly from this repository while the DMS registry submission is pending:
 
 ```sh
-mkdir -p ~/.config/DankMaterialShell/plugins
-ln -s "$PWD" ~/.config/DankMaterialShell/plugins/bitwarden
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins"
+git clone --branch dms-port https://github.com/coldi1337/dms-bitwarden-cli.git \
+  "${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins/bitwarden"
 dms ipc call plugin-scan scan
-```
-
-After discovery, enable **Bitwarden** in **Settings → Plugins** and add it to your DankBar layout. CLI equivalent for enabling:
-
-```sh
 dms ipc call plugins enable bitwarden
 ```
 
-Respect `$XDG_CONFIG_HOME` if customized. Do not replace an existing plugin directory or symlink. This development installation needs no fork, push or registry submission.
+Then add **Bitwarden** to your DankBar layout in DMS settings. If the destination already exists, update that installation instead of cloning over it.
+
+To update a clean installation:
+
+```sh
+git -C "${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins/bitwarden" pull --ff-only
+dms restart
+```
+
+Restarting DMS loads updated QML imports and locks the plugin's active vault. Your CLI account remains signed in.
 
 ## Sign in and use the vault
 
@@ -117,6 +122,17 @@ See [the SSH-agent guide](docs/ssh-agent.md) for the original protocol and routi
 
 ## Development
 
+For a development checkout, link the repository into DMS instead of cloning into its plugin directory. Run this from the checkout, with no existing `bitwarden` installation at the destination:
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins"
+ln -s "$PWD" "${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins/bitwarden"
+dms ipc call plugin-scan scan
+dms ipc call plugins enable bitwarden
+```
+
+Run the automated checks with Rust/Cargo, Node.js and Qt 6's `qmltestrunner` installed:
+
 ```sh
 bash tests/run.sh
 ```
@@ -138,17 +154,17 @@ dms ipc call plugin-scan reload bitwarden
 
 DMS reloads the entry component with a cache-busting URL, but imported QML/JavaScript may remain cached. After changing imported controls or the model, restart DMS to load the complete new version. Reloading/removing the daemon locks its active vault; the CLI account stays signed in.
 
-## Remove the local installation
+## Uninstall
 
-Disable Bitwarden in DMS, remove its bar widget, and remove the development symlink:
+Turn off PIN/fingerprint storage or log out in the panel first if you want to remove its stored credentials. Then disable the plugin:
 
 ```sh
 dms ipc call plugins disable bitwarden
-unlink ~/.config/DankMaterialShell/plugins/bitwarden
-dms ipc call plugin-scan scan
 ```
 
-The source checkout and CLI account remain. Turn off PIN/fingerprint storage or log out in the panel before uninstalling if those optional stored credentials should also be removed.
+Remove its DankBar widget and the `bitwarden` folder from `${XDG_CONFIG_HOME:-$HOME/.config}/DankMaterialShell/plugins`. For a development installation, remove only the symlink to keep your checkout. Run `dms ipc call plugin-scan scan` afterward.
+
+Removing the plugin folder does not remove the official CLI's account data.
 
 ## License
 
