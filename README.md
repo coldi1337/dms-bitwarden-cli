@@ -4,6 +4,10 @@ A Bitwarden and Vaultwarden plugin for DankMaterialShell, maintained by [coldi13
 
 Search, copy and manage a Bitwarden or Vaultwarden vault directly in a Quickshell panel. The official `bw` CLI performs vault operations. The plugin supports logins, secure notes, cards, identities, TOTP, folders, organizations, the password generator, Bitwarden Send and an optional SSH agent.
 
+![DMS plugin settings](docs/screenshots/dms-settings.png)
+
+The preview shows a settings excerpt with account information excluded. The numbered screenshots inherited from upstream show its Omarchy UI with fictional demo data.
+
 ## Requirements
 
 - DankMaterialShell **1.6.0 or newer** and Quickshell.
