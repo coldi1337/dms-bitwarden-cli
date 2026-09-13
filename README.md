@@ -25,6 +25,10 @@ Translations are shipped in `translations/de.json` and loaded through DMS's plug
 
 The setup screen identifies missing required dependencies. On Arch, its install action opens a terminal and runs `sudo pacman -S --needed` for the selected packages. On other distributions, install the named packages with the distribution's package manager.
 
+## Platform support
+
+The core vault panel uses DMS and the tools listed above. Interactive testing has been on Arch Linux with Hyprland. Automatic suggestions for the active window currently use `hyprctl` and are available on Hyprland; manual vault search works independently of that feature. On distributions without `pacman`, install dependencies manually. Fingerprint unlock additionally requires compatible hardware, enrollment and the DMS PAM configuration.
+
 ## Installation
 
 Install directly from this repository while the DMS registry submission is pending:
