@@ -1,4 +1,4 @@
-# Bitwarden for DankMaterialShell
+# Bitwarden Dankbar
 
 A Bitwarden and Vaultwarden plugin for DankMaterialShell, maintained by [coldi1337](https://github.com/coldi1337). Based on [Elevate08/qs-bitwarden-cli](https://github.com/Elevate08/qs-bitwarden-cli) by David Spencer. MIT licensed.
 
@@ -41,7 +41,7 @@ dms ipc call plugin-scan scan
 dms ipc call plugins enable bitwarden
 ```
 
-Then add **Bitwarden** to your DankBar layout in DMS settings. If the destination already exists, update that installation instead of cloning over it.
+Then add **Bitwarden Dankbar** to your DankBar layout in DMS settings. If the destination already exists, update that installation instead of cloning over it.
 
 To update a clean installation:
 
