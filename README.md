@@ -4,9 +4,9 @@ A Bitwarden and Vaultwarden plugin for DankMaterialShell, maintained by [coldi13
 
 Search, copy and manage a Bitwarden or Vaultwarden vault directly in a Quickshell panel. The official `bw` CLI performs vault operations. The plugin supports logins, secure notes, cards, identities, TOTP, folders, organizations, the password generator, Bitwarden Send and an optional SSH agent.
 
-![DMS plugin settings](docs/screenshots/dms-settings.png)
+![Bitwarden Dankbar with a demo vault](docs/screenshots/dms-vault-preview.png)
 
-The preview shows a settings excerpt with account information excluded. The numbered screenshots inherited from upstream show its Omarchy UI with fictional demo data.
+The preview renders the plugin's actual QML controls with fictional demo data in an isolated, non-interactive scene. Processes, keyring access and IPC are disabled in that scene. The numbered screenshots inherited from upstream show its Omarchy UI with fictional demo data.
 
 ## Language
 
@@ -135,6 +135,14 @@ The upstream SSH helper, approval screens and key-handling code are retained. Th
 See [the SSH-agent guide](docs/ssh-agent.md) for the original protocol and routing details. That guide and demo scripts still contain upstream Omarchy commands; use the DMS IPC commands above for this port. Live fingerprint and SSH signing depend on the local device/keyring and the user's own activation; automated tests use disposable keys.
 
 ## Development
+
+Recreate the demo preview with Python 3, Quickshell, and the Inter / JetBrainsMono Nerd Font fonts installed:
+
+```sh
+python3 demo/render-dms-preview.py
+```
+
+The renderer uses a temporary copy of the UI with inert service stubs and writes `docs/screenshots/dms-vault-preview.png`. It does not open your live vault or restart DMS.
 
 For a development checkout, link the repository into DMS instead of cloning into its plugin directory. Run this from the checkout, with no existing `bitwarden` installation at the destination:
 
