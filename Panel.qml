@@ -579,7 +579,7 @@ Item {
   Component.onDestruction: {
     // Daemon removal closes its processes. Detach the session revoke so it
     // still completes after QML destruction; SSH helper EOF drops its keys.
-    if (root.session) Quickshell.execDetached({command: Model.lockCommand(), environment: root.bwEnv()});
+    if (root.session) Quickshell.execDetached(["bash", "-c", "BW_SESSION=\"$1\" bw lock", "_", String(root.session)]);
     Quickshell.execDetached(Model.keyringClearCommand());
     if (clipboardClearTimer.running) Quickshell.execDetached(["wl-copy", "--clear"]);
     root.session = "";
@@ -5257,10 +5257,12 @@ Item {
     // the password or TOTP code straight into /proc/<pid>/cmdline. Remove that
     // variable before starting wl-copy, whose clipboard owner can outlive this
     // short shell after it forks into the background.
-    Quickshell.execDetached({
-      command: ["bash", "-c", "printf '%s' \"$QSBW_CLIP\" | env -u QSBW_CLIP wl-copy --sensitive"],
-      environment: { "QSBW_CLIP": String(text) }
-    })
+    Quickshell.execDetached([
+      "bash", "-c",
+      'QSBW_CLIP="$1"; printf \'%s\' "$QSBW_CLIP" | env -u QSBW_CLIP wl-copy --sensitive',
+      "_",
+      String(text)
+    ])
     flashNotification(label + " copied!")
 
     if (clearClipboardSec > 0) {
@@ -9602,7 +9604,7 @@ Item {
 
                 readonly property var itemData: modelData
                 readonly property bool isSelected: root.cursorActive && root.selectedIndex === index
-                readonly property bool isHovered: rowMouseArea.containsMouse
+                readonly property bool isHovered: rowHover.hovered || rowMouseArea.containsMouse
 
                 width: ListView.view.width - root.scrollGutter
                 implicitHeight: Style.space(46)
@@ -9614,7 +9616,25 @@ Item {
                   ? Border.controlSpec("selected", root.fg, Color.accent)
                   : Border.none()
 
+                HoverHandler {
+                  id: rowHover
+                }
+
+                MouseArea {
+                  id: rowMouseArea
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    root.cursorActive = true
+                    root.openFilterGroup = ""
+                    root.selectedIndex = index
+                    root.openDetail(itemData)
+                  }
+                }
+
                 Row {
+                  z: 1
                   anchors.fill: parent
                   anchors.leftMargin: Style.space(10)
                   anchors.rightMargin: Style.space(8)
@@ -9797,20 +9817,6 @@ Item {
                       fontFamily: root.fontFamily
                       onClicked: root.openUrl(itemData.uris[0])
                     }
-                  }
-                }
-
-                MouseArea {
-                  id: rowMouseArea
-                  anchors.fill: parent
-                  hoverEnabled: true
-                  cursorShape: Qt.PointingHandCursor
-                  onClicked: {
-                    root.cursorActive = true
-                    root.openFilterGroup = ""
-                    root.selectedIndex = index
-                    root.openDetail(itemData)
-                  }
                 }
               }
             }
