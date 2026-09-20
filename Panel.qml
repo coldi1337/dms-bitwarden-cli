@@ -579,7 +579,11 @@ Item {
   Component.onDestruction: {
     // Daemon removal closes its processes. Detach the session revoke so it
     // still completes after QML destruction; SSH helper EOF drops its keys.
-    if (root.session) Quickshell.execDetached(["bash", "-c", "BW_SESSION=\"$1\" bw lock", "_", String(root.session)]);
+    if (root.session) {
+      revokeSessionProc.environment = root.bwEnv();
+      revokeSessionProc.startDetached();
+      revokeSessionProc.environment = ({});
+    }
     Quickshell.execDetached(Model.keyringClearCommand());
     if (clipboardClearTimer.running) Quickshell.execDetached(["wl-copy", "--clear"]);
     root.session = "";
@@ -5250,6 +5254,18 @@ Item {
   // Clipboard Actions & Sequential Password -> TOTP Follow-Up
   // -------------------------------------------------------------------------
 
+  // Process.startDetached avoids JS-object conversion to ProcessContext while
+  // preserving an environment-only handoff (no credentials in argv).
+  Process {
+    id: clipboardProc
+    command: ["bash", "-c", "printf '%s' \"$QSBW_CLIP\" | env -u QSBW_CLIP wl-copy --sensitive"]
+  }
+
+  Process {
+    id: revokeSessionProc
+    command: Model.lockCommand()
+  }
+
   function copyToClipboard(text, label) {
     if (!text) return
     resetAutoLockTimer()
@@ -5257,12 +5273,9 @@ Item {
     // the password or TOTP code straight into /proc/<pid>/cmdline. Remove that
     // variable before starting wl-copy, whose clipboard owner can outlive this
     // short shell after it forks into the background.
-    Quickshell.execDetached([
-      "bash", "-c",
-      'QSBW_CLIP="$1"; printf \'%s\' "$QSBW_CLIP" | env -u QSBW_CLIP wl-copy --sensitive',
-      "_",
-      String(text)
-    ])
+    clipboardProc.environment = { "QSBW_CLIP": String(text) }
+    clipboardProc.startDetached()
+    clipboardProc.environment = ({})
     flashNotification(label + " copied!")
 
     if (clearClipboardSec > 0) {
@@ -9817,6 +9830,7 @@ Item {
                       fontFamily: root.fontFamily
                       onClicked: root.openUrl(itemData.uris[0])
                     }
+                  }
                 }
               }
             }

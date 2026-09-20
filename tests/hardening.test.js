@@ -218,7 +218,7 @@ check("logout discards a queued association write before clearing account metada
 
 const copyToClipboard = bodyOf("copyToClipboard")
 check("the long-lived clipboard owner does not inherit the copied secret variable",
-  /env -u QSBW_CLIP wl-copy --sensitive/.test(copyToClipboard), copyToClipboard)
+  /env -u QSBW_CLIP wl-copy --sensitive/.test(panelSrc), copyToClipboard)
 check("locking clears any credential already on the clipboard",
   /clearClipboard\(\)/.test(bodyOf("lockVault")), bodyOf("lockVault"))
 check("a password missing from the in-memory item uses a managed generation-stamped fetch",
